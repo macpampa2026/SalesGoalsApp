@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Objetivos de Ventas</string>
+    <string name="app_name">Objetivos en carrera 152</string>
 
     <!-- Modos -->
     <string name="mode_advisor">Asesor (Vendedor)</string>
