@@ -28,12 +28,46 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Generate Gradle Wrapper
-        run: gradle wrapper --gradle-version 8.9
+        id: wrapper
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          gradle wrapper --gradle-version 8.9 2>&1 | tee /tmp/wrapper.log
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+
+      - name: Publish build logs to debug-log branch (always)
+        if: always()
+        run: |
+          set -e
+          mkdir -p /tmp/debug
+          cp /tmp/wrapper.log /tmp/debug/wrapper.log 2>/dev/null || echo "no wrapper log" > /tmp/debug/wrapper.log
+          cp /tmp/build.log   /tmp/debug/build.log   2>/dev/null || echo "no build log"   > /tmp/debug/build.log
+          {
+            echo "Build attempt: $(date -u +'%Y-%m-%d %H:%M:%SZ')"
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Wrapper outcome: ${{ steps.wrapper.outcome }}"
+            echo "Build outcome:   ${{ steps.build.outcome }}"
+            echo "Run id: ${GITHUB_RUN_ID}"
+          } > /tmp/debug/SUMMARY.txt
+          cd /tmp/debug
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b debug-log
+          git add .
+          git commit -q -m "Build log $(date -u +'%Y-%m-%d %H:%M:%SZ')"
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" debug-log:debug-log
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload APK as workflow artifact
+        if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: SalesGoalsApp-debug-apk
@@ -41,7 +75,7 @@ jobs:
           retention-days: 30
 
       - name: Publish APK to apk-output branch
-        if: success()
+        if: steps.build.outcome == 'success'
         run: |
           set -e
           mkdir -p /tmp/out
@@ -57,3 +91,7 @@ jobs:
           git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" apk-output:apk-output
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail job if build failed
+        if: steps.build.outcome != 'success'
+        run: exit 1
