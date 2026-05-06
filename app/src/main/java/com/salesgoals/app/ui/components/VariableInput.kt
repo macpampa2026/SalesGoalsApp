@@ -17,9 +17,9 @@ import com.salesgoals.app.data.models.VariableType
 fun VariableInput(
     type: VariableType,
     value: String,
-    onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    label: String? = null
+    label: String? = null,
+    onValueChange: (String) -> Unit
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         OutlinedTextField(
