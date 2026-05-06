@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Objetivos de Ventas</string>
+
+    <!-- Modos -->
+    <string name="mode_advisor">Asesor (Vendedor)</string>
+    <string name="mode_manager">Gerencia (Administrador)</string>
+    <string name="welcome_title">Gestión de Objetivos</string>
+    <string name="welcome_subtitle">Selecciona tu modo de uso</string>
+
+    <!-- Variables -->
+    <string name="var_volume">Volumen</string>
+    <string name="var_credit">Crédito</string>
+    <string name="var_warranty">Garantía</string>
+    <string name="var_cash_credit">Crédito Efectivo</string>
+    <string name="var_phones">Celulares</string>
+
+    <!-- Acciones comunes -->
+    <string name="action_save">Guardar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_edit">Editar</string>
+    <string name="action_share">Compartir</string>
+    <string name="action_import">Importar</string>
+    <string name="action_export">Exportar</string>
+    <string name="action_continue">Continuar</string>
+    <string name="action_back">Volver</string>
+
+    <!-- Configuración días -->
+    <string name="days_config_title">Días Laborales del Mes</string>
+    <string name="days_config_subtitle">Configurá cantidad de días reales (descontá domingos, francos, feriados, vacaciones)</string>
+    <string name="working_days">Días laborales</string>
+
+    <!-- Asesor -->
+    <string name="advisor_dashboard">Dashboard Asesor</string>
+    <string name="daily_entry">Carga Diaria</string>
+    <string name="history">Historial</string>
+    <string name="import_budget">Importar Presupuesto</string>
+
+    <!-- Gerencia -->
+    <string name="manager_dashboard">Dashboard Gerencia</string>
+    <string name="budget_setup">Presupuesto de Sucursal</string>
+    <string name="distribution">Distribución entre Asesores</string>
+    <string name="advisor_count">Cantidad de asesores</string>
+
+    <!-- Estados -->
+    <string name="status_on_track">En línea</string>
+    <string name="status_warning">Riesgo</string>
+    <string name="status_behind">Atrasado</string>
+
+    <!-- Notificaciones -->
+    <string name="notification_channel_id">sales_goals_channel</string>
+    <string name="notification_channel_name">Recordatorios diarios</string>
+    <string name="notification_reminder_title">Recordatorio</string>
+    <string name="notification_reminder_text">No olvides cargar tus resultados de hoy</string>
+</resources>

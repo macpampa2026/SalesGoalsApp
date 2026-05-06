@@ -1,0 +1,166 @@
+package com.salesgoals.app.ui.screens.advisor
+
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.salesgoals.app.data.models.VariableSet
+import com.salesgoals.app.data.models.VariableType
+import com.salesgoals.app.ui.components.SectionHeader
+import com.salesgoals.app.ui.components.VariableInput
+import com.salesgoals.app.utils.ExportImportHelper
+import com.salesgoals.app.utils.Formatters
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ImportBudgetScreen(
+    onBack: () -> Unit,
+    onSuccess: () -> Unit,
+    viewModel: AdvisorViewModel = viewModel(factory = AdvisorViewModel.Factory)
+) {
+    val context = LocalContext.current
+
+    var name by remember { mutableStateOf("") }
+    var period by remember { mutableStateOf(Formatters.currentPeriod()) }
+    var workingDays by remember { mutableStateOf("22") }
+    var volume by remember { mutableStateOf("") }
+    var credit by remember { mutableStateOf("") }
+    var warranty by remember { mutableStateOf("") }
+    var cashCredit by remember { mutableStateOf("") }
+    var phones by remember { mutableStateOf("") }
+
+    val pickFile = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val payload = ExportImportHelper.importPayload(context, uri)
+                viewModel.applyImportedPayload(payload)
+                Toast.makeText(context, "Presupuesto importado correctamente", Toast.LENGTH_SHORT).show()
+                onSuccess()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error al leer el archivo: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Importar / Cargar Presupuesto") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SectionHeader(
+                title = "Importar archivo",
+                subtitle = "Seleccioná el JSON o CSV enviado por tu Gerencia"
+            )
+            Button(
+                onClick = { pickFile.launch(arrayOf("application/json", "text/csv", "text/comma-separated-values", "*/*")) },
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) {
+                Icon(Icons.Default.UploadFile, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Elegir archivo")
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+            SectionHeader(title = "O cargar manualmente", subtitle = "Ingresá tus objetivos y días")
+
+            OutlinedTextField(
+                value = name, onValueChange = { name = it },
+                label = { Text("Tu nombre") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = period, onValueChange = { period = it },
+                label = { Text("Periodo (YYYY-MM)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = workingDays, onValueChange = { workingDays = it.filter { c -> c.isDigit() } },
+                label = { Text("Días laborales") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            VariableInput(VariableType.VOLUME, volume) { volume = it }
+            VariableInput(VariableType.CREDIT, credit) { credit = it }
+            VariableInput(VariableType.WARRANTY, warranty) { warranty = it }
+            VariableInput(VariableType.CASH_CREDIT, cashCredit) { cashCredit = it }
+            VariableInput(VariableType.PHONES, phones) { phones = it }
+
+            FilledTonalButton(
+                onClick = {
+                    val days = workingDays.toIntOrNull() ?: 22
+                    val goals = VariableSet(
+                        volume = Formatters.toDouble(volume),
+                        credit = Formatters.toDouble(credit),
+                        warranty = Formatters.toDouble(warranty),
+                        cashCredit = Formatters.toDouble(cashCredit),
+                        phones = Formatters.toDouble(phones)
+                    )
+                    viewModel.saveManualBudget(name, period, days, goals)
+                    Toast.makeText(context, "Presupuesto guardado", Toast.LENGTH_SHORT).show()
+                    onSuccess()
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) {
+                Icon(Icons.Default.Save, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Guardar manualmente")
+            }
+        }
+    }
+}
