@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -50,6 +51,7 @@ fun AdvisorDashboardScreen(
     onOpenHistory: () -> Unit,
     onOpenImport: () -> Unit,
     onOpenDaysConfig: () -> Unit,
+    onOpenGrid: () -> Unit,
     onBack: () -> Unit,
     viewModel: AdvisorViewModel = viewModel(factory = AdvisorViewModel.Factory)
 ) {
@@ -78,7 +80,8 @@ fun AdvisorDashboardScreen(
                     .padding(padding)
                     .padding(16.dp),
                 onImport = onOpenImport,
-                onConfigDays = onOpenDaysConfig
+                onConfigDays = onOpenDaysConfig,
+                onOpenGrid = onOpenGrid
             )
         } else {
             DashboardContent(
@@ -87,7 +90,8 @@ fun AdvisorDashboardScreen(
                 onOpenDailyEntry = onOpenDailyEntry,
                 onOpenHistory = onOpenHistory,
                 onOpenImport = onOpenImport,
-                onOpenDaysConfig = onOpenDaysConfig
+                onOpenDaysConfig = onOpenDaysConfig,
+                onOpenGrid = onOpenGrid
             )
         }
     }
@@ -100,7 +104,8 @@ private fun DashboardContent(
     onOpenDailyEntry: () -> Unit,
     onOpenHistory: () -> Unit,
     onOpenImport: () -> Unit,
-    onOpenDaysConfig: () -> Unit
+    onOpenDaysConfig: () -> Unit,
+    onOpenGrid: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -141,6 +146,19 @@ private fun DashboardContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilledTonalButton(
+                    onClick = onOpenGrid,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(Icons.Default.GridView, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Grilla mensual")
+                }
+                FilledTonalButton(
                     onClick = onOpenDaysConfig,
                     modifier = Modifier.weight(1f).height(48.dp),
                     shape = RoundedCornerShape(12.dp)
@@ -149,18 +167,21 @@ private fun DashboardContent(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Días: ${state.workingDays}")
                 }
+            }
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 FilledTonalButton(
                     onClick = onOpenImport,
                     modifier = Modifier.weight(1f).height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.Download, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Importar")
+                    Text("Importar / editar presupuesto")
                 }
             }
         }
@@ -195,7 +216,8 @@ private fun HeaderInfo(state: AdvisorUiState) {
 private fun EmptyAdvisor(
     modifier: Modifier = Modifier,
     onImport: () -> Unit,
-    onConfigDays: () -> Unit
+    onConfigDays: () -> Unit,
+    onOpenGrid: () -> Unit
 ) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -205,7 +227,7 @@ private fun EmptyAdvisor(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Importá el archivo enviado por tu Gerencia o configurá manualmente",
+                "Importá el archivo, cargá tu presupuesto manual o armá tu propia grilla mensual",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -214,6 +236,12 @@ private fun EmptyAdvisor(
                 Icon(Icons.Default.Download, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Importar presupuesto")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            FilledTonalButton(onClick = onOpenGrid, modifier = Modifier.height(48.dp)) {
+                Icon(Icons.Default.GridView, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Armar grilla mensual")
             }
             Spacer(modifier = Modifier.height(8.dp))
             FilledTonalButton(onClick = onConfigDays) {

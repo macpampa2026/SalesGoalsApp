@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesgoals.app.data.entities.DailyEntryEntity
 import com.salesgoals.app.data.models.VariableType
+import com.salesgoals.app.ui.components.SectionHeader
 import com.salesgoals.app.ui.components.VariableInput
 import com.salesgoals.app.utils.Formatters
 import kotlinx.coroutines.launch
@@ -49,11 +53,21 @@ fun DailyEntryScreen(
     viewModel: AdvisorViewModel = viewModel(factory = AdvisorViewModel.Factory)
 ) {
     val targetDate = date ?: Formatters.today()
+
+    // Ventas
     var volume by remember { mutableStateOf("") }
     var credit by remember { mutableStateOf("") }
     var warranty by remember { mutableStateOf("") }
     var cashCredit by remember { mutableStateOf("") }
     var phones by remember { mutableStateOf("") }
+
+    // Objetivo diario opcional
+    var tVolume by remember { mutableStateOf("") }
+    var tCredit by remember { mutableStateOf("") }
+    var tWarranty by remember { mutableStateOf("") }
+    var tCashCredit by remember { mutableStateOf("") }
+    var tPhones by remember { mutableStateOf("") }
+
     var note by remember { mutableStateOf("") }
 
     val snackbar = remember { SnackbarHostState() }
@@ -67,6 +81,13 @@ fun DailyEntryScreen(
             warranty = if (existing.warranty == 0.0) "" else existing.warranty.toLong().toString()
             cashCredit = if (existing.cashCredit == 0.0) "" else existing.cashCredit.toLong().toString()
             phones = if (existing.phones == 0.0) "" else existing.phones.toLong().toString()
+
+            tVolume = if (existing.targetVolume == 0.0) "" else existing.targetVolume.toLong().toString()
+            tCredit = if (existing.targetCredit == 0.0) "" else existing.targetCredit.toLong().toString()
+            tWarranty = if (existing.targetWarranty == 0.0) "" else existing.targetWarranty.toLong().toString()
+            tCashCredit = if (existing.targetCashCredit == 0.0) "" else existing.targetCashCredit.toLong().toString()
+            tPhones = if (existing.targetPhones == 0.0) "" else existing.targetPhones.toLong().toString()
+
             note = existing.note
         }
     }
@@ -97,11 +118,40 @@ fun DailyEntryScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            VariableInput(VariableType.VOLUME, volume) { volume = it }
-            VariableInput(VariableType.CREDIT, credit) { credit = it }
-            VariableInput(VariableType.WARRANTY, warranty) { warranty = it }
-            VariableInput(VariableType.CASH_CREDIT, cashCredit) { cashCredit = it }
-            VariableInput(VariableType.PHONES, phones) { phones = it }
+            // ===== Sección Ventas =====
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionHeader(title = "Ventas del día", subtitle = "Cargá los resultados reales")
+                    VariableInput(VariableType.VOLUME, volume) { volume = it }
+                    VariableInput(VariableType.CREDIT, credit) { credit = it }
+                    VariableInput(VariableType.WARRANTY, warranty) { warranty = it }
+                    VariableInput(VariableType.CASH_CREDIT, cashCredit) { cashCredit = it }
+                    VariableInput(VariableType.PHONES, phones) { phones = it }
+                }
+            }
+
+            // ===== Sección Objetivo del día =====
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionHeader(
+                        title = "Objetivo del día (opcional)",
+                        subtitle = "Si lo dejás vacío, se usa el objetivo mensual / días laborales"
+                    )
+                    VariableInput(VariableType.VOLUME, tVolume, label = "Objetivo Volumen") { tVolume = it }
+                    VariableInput(VariableType.CREDIT, tCredit, label = "Objetivo Crédito") { tCredit = it }
+                    VariableInput(VariableType.WARRANTY, tWarranty, label = "Objetivo Garantía") { tWarranty = it }
+                    VariableInput(VariableType.CASH_CREDIT, tCashCredit, label = "Objetivo Crédito Efectivo") { tCashCredit = it }
+                    VariableInput(VariableType.PHONES, tPhones, label = "Objetivo Celulares") { tPhones = it }
+                }
+            }
 
             OutlinedTextField(
                 value = note,
@@ -121,6 +171,11 @@ fun DailyEntryScreen(
                         warranty = Formatters.toDouble(warranty),
                         cashCredit = Formatters.toDouble(cashCredit),
                         phones = Formatters.toDouble(phones),
+                        targetVolume = Formatters.toDouble(tVolume),
+                        targetCredit = Formatters.toDouble(tCredit),
+                        targetWarranty = Formatters.toDouble(tWarranty),
+                        targetCashCredit = Formatters.toDouble(tCashCredit),
+                        targetPhones = Formatters.toDouble(tPhones),
                         note = note
                     )
                     viewModel.saveDailyEntry(entry)
@@ -130,7 +185,7 @@ fun DailyEntryScreen(
             ) {
                 Icon(Icons.Default.Save, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Guardar resultado")
+                Text("Guardar")
             }
         }
     }

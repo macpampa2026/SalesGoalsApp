@@ -112,7 +112,8 @@ class ManagerViewModel(
 
     fun saveBranchBudget() {
         viewModelScope.launch {
-            val s = state.value
+            // Leemos del estado local directamente (no de state.value, que es asíncrono y puede estar desfasado)
+            val s = local.value
             repository.saveBudget(
                 BudgetEntity(
                     id = 1,
@@ -133,26 +134,28 @@ class ManagerViewModel(
     }
 
     fun buildPayloadFor(advisorName: String): AdvisorBudgetPayload {
-        val s = state.value
+        val s = local.value
+        val perAdvisor = s.totalGoals / s.advisorCount
         return AdvisorBudgetPayload(
             advisorName = advisorName,
             branchName = s.branchName,
             period = s.period,
             workingDays = s.workingDays,
-            goals = s.perAdvisor,
+            goals = perAdvisor,
             notes = "Distribución automática (${s.advisorCount} asesores)"
         )
     }
 
     fun buildDistribution(): BranchDistribution {
-        val s = state.value
+        val s = local.value
+        val perAdvisor = s.totalGoals / s.advisorCount
         return BranchDistribution(
             branchName = s.branchName,
             period = s.period,
             workingDays = s.workingDays,
             advisorCount = s.advisorCount,
             totalGoals = s.totalGoals,
-            perAdvisorGoals = s.perAdvisor,
+            perAdvisorGoals = perAdvisor,
             advisors = s.advisors
         )
     }

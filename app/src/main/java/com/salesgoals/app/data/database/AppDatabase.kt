@@ -9,7 +9,7 @@ import com.salesgoals.app.data.entities.DailyEntryEntity
 
 @Database(
     entities = [BudgetEntity::class, DailyEntryEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

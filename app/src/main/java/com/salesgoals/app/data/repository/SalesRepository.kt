@@ -72,3 +72,19 @@ fun DailyEntryEntity.toSet(): VariableSet = VariableSet(
     cashCredit = cashCredit,
     phones = phones
 )
+
+/**
+ * Devuelve los objetivos del día. Si todos los `target_*` son 0, devuelve null
+ * (se debe usar el default mensual/días).
+ */
+fun DailyEntryEntity.toTargetsOrNull(): VariableSet? {
+    val anyTarget = targetVolume + targetCredit + targetWarranty + targetCashCredit + targetPhones
+    if (anyTarget <= 0.0) return null
+    return VariableSet(
+        volume = targetVolume,
+        credit = targetCredit,
+        warranty = targetWarranty,
+        cashCredit = targetCashCredit,
+        phones = targetPhones
+    )
+}

@@ -14,6 +14,7 @@ import com.salesgoals.app.ui.screens.advisor.AdvisorViewModel
 import com.salesgoals.app.ui.screens.advisor.DailyEntryScreen
 import com.salesgoals.app.ui.screens.advisor.HistoryScreen
 import com.salesgoals.app.ui.screens.advisor.ImportBudgetScreen
+import com.salesgoals.app.ui.screens.advisor.MonthlyGridScreen
 import com.salesgoals.app.ui.screens.common.DaysConfigScreen
 import com.salesgoals.app.ui.screens.manager.BudgetSetupScreen
 import com.salesgoals.app.ui.screens.manager.DistributionScreen
@@ -27,6 +28,7 @@ object Routes {
     const val ADVISOR_HISTORY = "advisor/history"
     const val ADVISOR_IMPORT = "advisor/import"
     const val ADVISOR_DAYS = "advisor/days"
+    const val ADVISOR_GRID = "advisor/grid"
 
     const val MANAGER_DASH = "manager/dashboard"
     const val MANAGER_SETUP = "manager/setup"
@@ -51,7 +53,14 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
                 onOpenHistory = { navController.navigate(Routes.ADVISOR_HISTORY) },
                 onOpenImport = { navController.navigate(Routes.ADVISOR_IMPORT) },
                 onOpenDaysConfig = { navController.navigate(Routes.ADVISOR_DAYS) },
+                onOpenGrid = { navController.navigate(Routes.ADVISOR_GRID) },
                 onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Routes.ADVISOR_GRID) {
+            MonthlyGridScreen(
+                onBack = { navController.popBackStack() },
+                onEditDay = { date -> navController.navigate("advisor/daily/$date") }
             )
         }
         composable(Routes.ADVISOR_DAILY) {
