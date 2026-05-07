@@ -54,14 +54,12 @@ fun DailyEntryScreen(
 ) {
     val targetDate = date ?: Formatters.today()
 
-    // Ventas
     var volume by remember { mutableStateOf("") }
     var credit by remember { mutableStateOf("") }
     var warranty by remember { mutableStateOf("") }
     var cashCredit by remember { mutableStateOf("") }
     var phones by remember { mutableStateOf("") }
 
-    // Objetivo diario opcional
     var tVolume by remember { mutableStateOf("") }
     var tCredit by remember { mutableStateOf("") }
     var tWarranty by remember { mutableStateOf("") }
@@ -118,7 +116,6 @@ fun DailyEntryScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // ===== Sección Ventas =====
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -134,7 +131,6 @@ fun DailyEntryScreen(
                 }
             }
 
-            // ===== Sección Objetivo del día =====
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -164,22 +160,24 @@ fun DailyEntryScreen(
 
             Button(
                 onClick = {
-                    val entry = DailyEntryEntity(
-                        date = targetDate,
-                        volume = Formatters.toDouble(volume),
-                        credit = Formatters.toDouble(credit),
-                        warranty = Formatters.toDouble(warranty),
-                        cashCredit = Formatters.toDouble(cashCredit),
-                        phones = Formatters.toDouble(phones),
-                        targetVolume = Formatters.toDouble(tVolume),
-                        targetCredit = Formatters.toDouble(tCredit),
-                        targetWarranty = Formatters.toDouble(tWarranty),
-                        targetCashCredit = Formatters.toDouble(tCashCredit),
-                        targetPhones = Formatters.toDouble(tPhones),
-                        note = note
-                    )
-                    viewModel.saveDailyEntry(entry)
-                    scope.launch { snackbar.showSnackbar("Guardado correctamente") }
+                    scope.launch {
+                        val entry = DailyEntryEntity(
+                            date = targetDate,
+                            volume = Formatters.toDouble(volume),
+                            credit = Formatters.toDouble(credit),
+                            warranty = Formatters.toDouble(warranty),
+                            cashCredit = Formatters.toDouble(cashCredit),
+                            phones = Formatters.toDouble(phones),
+                            targetVolume = Formatters.toDouble(tVolume),
+                            targetCredit = Formatters.toDouble(tCredit),
+                            targetWarranty = Formatters.toDouble(tWarranty),
+                            targetCashCredit = Formatters.toDouble(tCashCredit),
+                            targetPhones = Formatters.toDouble(tPhones),
+                            note = note
+                        )
+                        viewModel.saveDailyEntry(entry)
+                        snackbar.showSnackbar("Guardado correctamente")
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) {

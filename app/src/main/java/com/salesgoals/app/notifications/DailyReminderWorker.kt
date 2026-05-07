@@ -23,7 +23,7 @@ class DailyReminderWorker(
     override suspend fun doWork(): Result {
         val app = applicationContext as? SalesGoalsApplication ?: return Result.success()
         val repo = app.repository
-        val budget = repo.getBudget() ?: run {
+        val budget = repo.getAdvisorBudget() ?: run {
             NotificationHelper.showDailyReminder(applicationContext)
             return Result.success()
         }

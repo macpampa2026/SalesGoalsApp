@@ -30,132 +30,122 @@ data class ManagerUiState(
     val totalGoals: VariableSet = VariableSet.ZERO,
     val perAdvisor: VariableSet = VariableSet.ZERO,
     val perDayPerAdvisor: VariableSet = VariableSet.ZERO,
-    val advisors: List<String> = listOf("Asesor 1")
+    val advisors: List<String> = listOf("Asesor 1"),
+    val isLoaded: Boolean = false
 )
 
-private data class ManagerLocal(
-    val initialized: Boolean = false,
-    val branchName: String = "",
-    val period: String = Formatters.currentPeriod(),
-    val workingDays: Int = 22,
-    val advisorCount: Int = 1,
-    val totalGoals: VariableSet = VariableSet.ZERO,
-    val advisors: List<String> = listOf("Asesor 1")
-)
-
+/**
+ * VM del modo Gerencia. El estado se deriva DIRECTAMENTE de Room para evitar
+ * doble fuente de verdad y race conditions. Los nombres de asesores se manejan
+ * en memoria (no se persisten al budget).
+ */
 class ManagerViewModel(
     application: Application,
     val repository: SalesRepository
 ) : AndroidViewModel(application) {
 
-    private val local = MutableStateFlow(ManagerLocal())
+    private val advisorNames = MutableStateFlow<List<String>>(listOf("Asesor 1"))
 
     val state: StateFlow<ManagerUiState> = combine(
-        repository.observeBudget(),
-        local
-    ) { budget, ov ->
-        // Hidratar la primera vez con datos persistidos (si hay) y modo gerencia
-        val effective = if (!ov.initialized && budget != null && budget.isManagerMode) {
-            ov.copy(
-                initialized = true,
-                branchName = budget.branchName,
-                period = budget.period.ifBlank { Formatters.currentPeriod() },
-                workingDays = budget.workingDays,
-                advisorCount = budget.advisorCount,
-                totalGoals = budget.toGoals(),
-                advisors = adjustList(ov.advisors, budget.advisorCount)
-            ).also { local.value = it }
-        } else if (!ov.initialized) {
-            ov.copy(initialized = true).also { local.value = it }
-        } else ov
-
-        val perAdvisor = effective.totalGoals / effective.advisorCount
-        val perDay = if (effective.workingDays > 0) perAdvisor / effective.workingDays else perAdvisor
-
+        repository.observeManagerBudget(),
+        advisorNames
+    ) { budget, names ->
+        val workingDays = (budget?.workingDays ?: 22).coerceIn(1, 31)
+        val advisorCount = (budget?.advisorCount ?: 1).coerceIn(1, 50)
+        val totalGoals = budget?.toGoals() ?: VariableSet.ZERO
+        val perAdvisor = totalGoals / advisorCount
+        val perDay = if (workingDays > 0) perAdvisor / workingDays else perAdvisor
+        val syncedNames = adjustList(names, advisorCount)
         ManagerUiState(
             budget = budget,
-            branchName = effective.branchName,
-            period = effective.period,
-            workingDays = effective.workingDays,
-            advisorCount = effective.advisorCount,
-            totalGoals = effective.totalGoals,
+            branchName = budget?.branchName.orEmpty(),
+            period = budget?.period?.ifBlank { Formatters.currentPeriod() } ?: Formatters.currentPeriod(),
+            workingDays = workingDays,
+            advisorCount = advisorCount,
+            totalGoals = totalGoals,
             perAdvisor = perAdvisor,
             perDayPerAdvisor = perDay,
-            advisors = effective.advisors
+            advisors = syncedNames,
+            isLoaded = true
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ManagerUiState())
 
-    fun updateBranchName(v: String) { local.value = local.value.copy(branchName = v) }
-    fun updatePeriod(v: String) { local.value = local.value.copy(period = v) }
-    fun updateWorkingDays(v: Int) { local.value = local.value.copy(workingDays = v.coerceIn(1, 31)) }
-    fun updateAdvisorCount(v: Int) {
-        val safe = v.coerceIn(1, 50)
-        local.value = local.value.copy(
-            advisorCount = safe,
-            advisors = adjustList(local.value.advisors, safe)
-        )
+    init {
+        // Si el budget cambia el advisorCount, ajustamos la lista de nombres
+        viewModelScope.launch {
+            repository.observeManagerBudget().collect { budget ->
+                val safe = (budget?.advisorCount ?: 1).coerceIn(1, 50)
+                val current = advisorNames.value
+                if (current.size != safe) {
+                    advisorNames.value = adjustList(current, safe)
+                }
+            }
+        }
     }
-    fun updateTotalGoals(goals: VariableSet) { local.value = local.value.copy(totalGoals = goals) }
+
     fun updateAdvisorName(index: Int, name: String) {
-        val list = local.value.advisors.toMutableList()
+        val list = advisorNames.value.toMutableList()
         while (list.size <= index) list.add("Asesor ${list.size + 1}")
         list[index] = name
-        local.value = local.value.copy(advisors = list)
+        advisorNames.value = list
     }
 
     private fun adjustList(current: List<String>, size: Int): List<String> {
+        if (size <= 0) return listOf("Asesor 1")
         val list = current.toMutableList()
         while (list.size < size) list.add("Asesor ${list.size + 1}")
         while (list.size > size) list.removeAt(list.lastIndex)
         return list
     }
 
-    fun saveBranchBudget() {
-        viewModelScope.launch {
-            // Leemos del estado local directamente (no de state.value, que es asíncrono y puede estar desfasado)
-            val s = local.value
-            repository.saveBudget(
-                BudgetEntity(
-                    id = 1,
-                    ownerName = "",
-                    branchName = s.branchName,
-                    period = s.period,
-                    workingDays = s.workingDays,
-                    advisorCount = s.advisorCount,
-                    goalVolume = s.totalGoals.volume,
-                    goalCredit = s.totalGoals.credit,
-                    goalWarranty = s.totalGoals.warranty,
-                    goalCashCredit = s.totalGoals.cashCredit,
-                    goalPhones = s.totalGoals.phones,
-                    isManagerMode = true
-                )
+    /**
+     * Guarda el presupuesto. Suspende hasta que la escritura a Room se completa.
+     * La UI debe llamarla desde un scope.launch para esperar antes de navegar.
+     */
+    suspend fun saveBranchBudget(
+        branchName: String,
+        period: String,
+        workingDays: Int,
+        advisorCount: Int,
+        totalGoals: VariableSet
+    ) {
+        repository.saveManagerBudget(
+            BudgetEntity(
+                ownerName = "",
+                branchName = branchName,
+                period = period.ifBlank { Formatters.currentPeriod() },
+                workingDays = workingDays.coerceIn(1, 31),
+                advisorCount = advisorCount.coerceIn(1, 50),
+                goalVolume = totalGoals.volume,
+                goalCredit = totalGoals.credit,
+                goalWarranty = totalGoals.warranty,
+                goalCashCredit = totalGoals.cashCredit,
+                goalPhones = totalGoals.phones
             )
-        }
+        )
     }
 
     fun buildPayloadFor(advisorName: String): AdvisorBudgetPayload {
-        val s = local.value
-        val perAdvisor = s.totalGoals / s.advisorCount
+        val s = state.value
         return AdvisorBudgetPayload(
             advisorName = advisorName,
             branchName = s.branchName,
             period = s.period,
             workingDays = s.workingDays,
-            goals = perAdvisor,
+            goals = s.perAdvisor,
             notes = "Distribución automática (${s.advisorCount} asesores)"
         )
     }
 
     fun buildDistribution(): BranchDistribution {
-        val s = local.value
-        val perAdvisor = s.totalGoals / s.advisorCount
+        val s = state.value
         return BranchDistribution(
             branchName = s.branchName,
             period = s.period,
             workingDays = s.workingDays,
             advisorCount = s.advisorCount,
             totalGoals = s.totalGoals,
-            perAdvisorGoals = perAdvisor,
+            perAdvisorGoals = s.perAdvisor,
             advisors = s.advisors
         )
     }

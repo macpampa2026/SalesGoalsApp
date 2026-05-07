@@ -10,17 +10,30 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * Único punto de acceso a la persistencia local.
+ * Asesor (id=1) y Gerencia (id=2) tienen filas separadas.
  */
 class SalesRepository(
     private val budgetDao: BudgetDao,
     private val dailyEntryDao: DailyEntryDao
 ) {
 
-    fun observeBudget(): Flow<BudgetEntity?> = budgetDao.observe()
-    suspend fun getBudget(): BudgetEntity? = budgetDao.get()
-    suspend fun saveBudget(budget: BudgetEntity) = budgetDao.upsert(budget)
-    suspend fun clearBudget() = budgetDao.clear()
+    // ===== Asesor =====
+    fun observeAdvisorBudget(): Flow<BudgetEntity?> = budgetDao.observeAdvisor()
+    suspend fun getAdvisorBudget(): BudgetEntity? = budgetDao.getAdvisor()
+    suspend fun saveAdvisorBudget(budget: BudgetEntity) {
+        budgetDao.upsert(budget.copy(id = 1, isManagerMode = false, updatedAt = System.currentTimeMillis()))
+    }
+    suspend fun clearAdvisorBudget() = budgetDao.deleteById(1)
 
+    // ===== Gerencia =====
+    fun observeManagerBudget(): Flow<BudgetEntity?> = budgetDao.observeManager()
+    suspend fun getManagerBudget(): BudgetEntity? = budgetDao.getManager()
+    suspend fun saveManagerBudget(budget: BudgetEntity) {
+        budgetDao.upsert(budget.copy(id = 2, isManagerMode = true, updatedAt = System.currentTimeMillis()))
+    }
+    suspend fun clearManagerBudget() = budgetDao.deleteById(2)
+
+    // ===== Daily entries (asesor) =====
     fun observeEntries(period: String): Flow<List<DailyEntryEntity>> =
         dailyEntryDao.observeByPeriod(period)
 
@@ -32,28 +45,22 @@ class SalesRepository(
     suspend fun deleteEntry(date: String) = dailyEntryDao.deleteByDate(date)
     suspend fun clearEntries() = dailyEntryDao.clear()
 
-    /**
-     * Aplica un payload importado por el asesor.
-     * Sobrescribe el presupuesto vigente y limpia entries previas
-     * de un periodo distinto al recibido.
-     */
+    /** Aplica un payload importado por el asesor. */
     suspend fun applyImportedBudget(payload: AdvisorBudgetPayload) {
-        val budget = BudgetEntity(
-            id = 1,
-            ownerName = payload.advisorName,
-            branchName = payload.branchName,
-            period = payload.period,
-            workingDays = payload.workingDays,
-            advisorCount = 1,
-            goalVolume = payload.goals.volume,
-            goalCredit = payload.goals.credit,
-            goalWarranty = payload.goals.warranty,
-            goalCashCredit = payload.goals.cashCredit,
-            goalPhones = payload.goals.phones,
-            isManagerMode = false,
-            updatedAt = System.currentTimeMillis()
+        saveAdvisorBudget(
+            BudgetEntity(
+                ownerName = payload.advisorName,
+                branchName = payload.branchName,
+                period = payload.period,
+                workingDays = payload.workingDays,
+                advisorCount = 1,
+                goalVolume = payload.goals.volume,
+                goalCredit = payload.goals.credit,
+                goalWarranty = payload.goals.warranty,
+                goalCashCredit = payload.goals.cashCredit,
+                goalPhones = payload.goals.phones
+            )
         )
-        budgetDao.upsert(budget)
     }
 }
 

@@ -31,16 +31,19 @@ data class AdvisorUiState(
     val workingDays: Int = 22,
     val daysElapsed: Int = 1,
     val progressByVariable: List<VariableProgress> = emptyList(),
-    val isLoading: Boolean = true
+    val isLoaded: Boolean = false
 )
 
+/**
+ * VM del modo Asesor. Estado derivado de Room: observeAdvisorBudget + observeEntries.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AdvisorViewModel(
     application: Application,
     val repository: SalesRepository
 ) : AndroidViewModel(application) {
 
-    val state: StateFlow<AdvisorUiState> = repository.observeBudget()
+    val state: StateFlow<AdvisorUiState> = repository.observeAdvisorBudget()
         .flatMapLatest { budget ->
             val period = budget?.period?.ifBlank { Formatters.currentPeriod() } ?: Formatters.currentPeriod()
             repository.observeEntries(period).map { entries -> budget to entries }
@@ -52,7 +55,7 @@ class AdvisorViewModel(
         budget: BudgetEntity?,
         entries: List<DailyEntryEntity>
     ): AdvisorUiState {
-        val workingDays = budget?.workingDays ?: 22
+        val workingDays = (budget?.workingDays ?: 22).coerceIn(1, 31)
         val daysElapsed = Formatters.elapsedWorkingDays(workingDays).coerceAtLeast(1)
         val accumulated = entries.fold(VariableSet.ZERO) { acc, e -> acc + e.toSet() }
         val goals = budget?.toGoals() ?: VariableSet.ZERO
@@ -71,12 +74,18 @@ class AdvisorViewModel(
             workingDays = workingDays,
             daysElapsed = daysElapsed,
             progressByVariable = progress,
-            isLoading = false
+            isLoaded = true
         )
     }
 
-    fun saveDailyEntry(entry: DailyEntryEntity) {
+    /** Save fire-and-forget para inputs sin navegación */
+    fun saveDailyEntryAsync(entry: DailyEntryEntity) {
         viewModelScope.launch { repository.saveEntry(entry) }
+    }
+
+    /** Save suspend para flujos donde la UI necesita esperar */
+    suspend fun saveDailyEntry(entry: DailyEntryEntity) {
+        repository.saveEntry(entry)
     }
 
     fun deleteEntry(date: String) {
@@ -85,45 +94,36 @@ class AdvisorViewModel(
 
     fun updateWorkingDays(days: Int) {
         viewModelScope.launch {
-            val current = repository.getBudget()
+            val current = repository.getAdvisorBudget()
                 ?: BudgetEntity(period = Formatters.currentPeriod())
-            repository.saveBudget(
-                current.copy(
-                    workingDays = days.coerceIn(1, 31),
-                    updatedAt = System.currentTimeMillis()
-                )
-            )
+            repository.saveAdvisorBudget(current.copy(workingDays = days.coerceIn(1, 31)))
         }
     }
 
-    fun applyImportedPayload(payload: AdvisorBudgetPayload) {
-        viewModelScope.launch { repository.applyImportedBudget(payload) }
+    suspend fun applyImportedPayload(payload: AdvisorBudgetPayload) {
+        repository.applyImportedBudget(payload)
     }
 
-    fun saveManualBudget(
+    suspend fun saveManualBudget(
         advisorName: String,
         period: String,
         workingDays: Int,
         goals: VariableSet
     ) {
-        viewModelScope.launch {
-            repository.saveBudget(
-                BudgetEntity(
-                    id = 1,
-                    ownerName = advisorName,
-                    branchName = "",
-                    period = period,
-                    workingDays = workingDays,
-                    advisorCount = 1,
-                    goalVolume = goals.volume,
-                    goalCredit = goals.credit,
-                    goalWarranty = goals.warranty,
-                    goalCashCredit = goals.cashCredit,
-                    goalPhones = goals.phones,
-                    isManagerMode = false
-                )
+        repository.saveAdvisorBudget(
+            BudgetEntity(
+                ownerName = advisorName,
+                branchName = "",
+                period = period.ifBlank { Formatters.currentPeriod() },
+                workingDays = workingDays.coerceIn(1, 31),
+                advisorCount = 1,
+                goalVolume = goals.volume,
+                goalCredit = goals.credit,
+                goalWarranty = goals.warranty,
+                goalCashCredit = goals.cashCredit,
+                goalPhones = goals.phones
             )
-        }
+        )
     }
 
     companion object {

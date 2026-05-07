@@ -30,13 +30,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesgoals.app.data.models.VariableSet
 import com.salesgoals.app.data.models.VariableType
@@ -44,6 +47,7 @@ import com.salesgoals.app.ui.components.SectionHeader
 import com.salesgoals.app.ui.components.VariableInput
 import com.salesgoals.app.utils.ExportImportHelper
 import com.salesgoals.app.utils.Formatters
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,27 +57,47 @@ fun ImportBudgetScreen(
     viewModel: AdvisorViewModel = viewModel(factory = AdvisorViewModel.Factory)
 ) {
     val context = LocalContext.current
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
-    var name by remember { mutableStateOf("") }
-    var period by remember { mutableStateOf(Formatters.currentPeriod()) }
-    var workingDays by remember { mutableStateOf("22") }
-    var volume by remember { mutableStateOf("") }
-    var credit by remember { mutableStateOf("") }
-    var warranty by remember { mutableStateOf("") }
-    var cashCredit by remember { mutableStateOf("") }
-    var phones by remember { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
+    var period by rememberSaveable { mutableStateOf(Formatters.currentPeriod()) }
+    var workingDays by rememberSaveable { mutableStateOf("22") }
+    var volume by rememberSaveable { mutableStateOf("") }
+    var credit by rememberSaveable { mutableStateOf("") }
+    var warranty by rememberSaveable { mutableStateOf("") }
+    var cashCredit by rememberSaveable { mutableStateOf("") }
+    var phones by rememberSaveable { mutableStateOf("") }
+
+    var hydrated by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state.isLoaded, state.budget?.id) {
+        val b = state.budget
+        if (state.isLoaded && b != null && !hydrated) {
+            name = b.ownerName
+            period = b.period.ifBlank { Formatters.currentPeriod() }
+            workingDays = b.workingDays.toString()
+            volume = if (b.goalVolume == 0.0) "" else b.goalVolume.toLong().toString()
+            credit = if (b.goalCredit == 0.0) "" else b.goalCredit.toLong().toString()
+            warranty = if (b.goalWarranty == 0.0) "" else b.goalWarranty.toLong().toString()
+            cashCredit = if (b.goalCashCredit == 0.0) "" else b.goalCashCredit.toLong().toString()
+            phones = if (b.goalPhones == 0.0) "" else b.goalPhones.toLong().toString()
+            hydrated = true
+        }
+    }
 
     val pickFile = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            try {
-                val payload = ExportImportHelper.importPayload(context, uri)
-                viewModel.applyImportedPayload(payload)
-                Toast.makeText(context, "Presupuesto importado correctamente", Toast.LENGTH_SHORT).show()
-                onSuccess()
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error al leer el archivo: ${e.message}", Toast.LENGTH_LONG).show()
+            scope.launch {
+                try {
+                    val payload = ExportImportHelper.importPayload(context, uri)
+                    viewModel.applyImportedPayload(payload)
+                    Toast.makeText(context, "Presupuesto importado correctamente", Toast.LENGTH_SHORT).show()
+                    onSuccess()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Error al leer el archivo: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -131,7 +155,8 @@ fun ImportBudgetScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = workingDays, onValueChange = { workingDays = it.filter { c -> c.isDigit() } },
+                value = workingDays,
+                onValueChange = { v -> workingDays = v.filter { c -> c.isDigit() }.take(2) },
                 label = { Text("Días laborales") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -143,17 +168,19 @@ fun ImportBudgetScreen(
 
             FilledTonalButton(
                 onClick = {
-                    val days = workingDays.toIntOrNull() ?: 22
-                    val goals = VariableSet(
-                        volume = Formatters.toDouble(volume),
-                        credit = Formatters.toDouble(credit),
-                        warranty = Formatters.toDouble(warranty),
-                        cashCredit = Formatters.toDouble(cashCredit),
-                        phones = Formatters.toDouble(phones)
-                    )
-                    viewModel.saveManualBudget(name, period, days, goals)
-                    Toast.makeText(context, "Presupuesto guardado", Toast.LENGTH_SHORT).show()
-                    onSuccess()
+                    scope.launch {
+                        val days = workingDays.toIntOrNull() ?: 22
+                        val goals = VariableSet(
+                            volume = Formatters.toDouble(volume),
+                            credit = Formatters.toDouble(credit),
+                            warranty = Formatters.toDouble(warranty),
+                            cashCredit = Formatters.toDouble(cashCredit),
+                            phones = Formatters.toDouble(phones)
+                        )
+                        viewModel.saveManualBudget(name, period, days, goals)
+                        Toast.makeText(context, "Presupuesto guardado", Toast.LENGTH_SHORT).show()
+                        onSuccess()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) {

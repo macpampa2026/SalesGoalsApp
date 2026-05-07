@@ -67,7 +67,7 @@ fun ManagerDashboardScreen(
             )
         }
     ) { padding ->
-        if (state.totalGoals.volume == 0.0 && state.totalGoals.credit == 0.0) {
+        if (state.budget == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Aún no configuraste el presupuesto", style = MaterialTheme.typography.headlineMedium)

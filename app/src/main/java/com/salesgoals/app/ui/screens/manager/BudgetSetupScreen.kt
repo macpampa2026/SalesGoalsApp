@@ -29,7 +29,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +42,7 @@ import com.salesgoals.app.data.models.VariableType
 import com.salesgoals.app.ui.components.SectionHeader
 import com.salesgoals.app.ui.components.VariableInput
 import com.salesgoals.app.utils.Formatters
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,20 +53,35 @@ fun BudgetSetupScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
-    var branch by remember { mutableStateOf(state.branchName) }
-    var period by remember { mutableStateOf(state.period) }
-    var days by remember { mutableStateOf(state.workingDays.toString()) }
-    var advisors by remember { mutableStateOf(state.advisorCount.toString()) }
-    var volume by remember { mutableStateOf(if (state.totalGoals.volume == 0.0) "" else state.totalGoals.volume.toLong().toString()) }
-    var credit by remember { mutableStateOf(if (state.totalGoals.credit == 0.0) "" else state.totalGoals.credit.toLong().toString()) }
-    var warranty by remember { mutableStateOf(if (state.totalGoals.warranty == 0.0) "" else state.totalGoals.warranty.toLong().toString()) }
-    var cashCredit by remember { mutableStateOf(if (state.totalGoals.cashCredit == 0.0) "" else state.totalGoals.cashCredit.toLong().toString()) }
-    var phones by remember { mutableStateOf(if (state.totalGoals.phones == 0.0) "" else state.totalGoals.phones.toLong().toString()) }
+    // Inputs locales
+    var branch by rememberSaveable { mutableStateOf("") }
+    var period by rememberSaveable { mutableStateOf(Formatters.currentPeriod()) }
+    var days by rememberSaveable { mutableStateOf("22") }
+    var advisors by rememberSaveable { mutableStateOf("1") }
+    var volume by rememberSaveable { mutableStateOf("") }
+    var credit by rememberSaveable { mutableStateOf("") }
+    var warranty by rememberSaveable { mutableStateOf("") }
+    var cashCredit by rememberSaveable { mutableStateOf("") }
+    var phones by rememberSaveable { mutableStateOf("") }
 
-    LaunchedEffect(state) {
-        if (branch.isEmpty()) branch = state.branchName
-        if (volume.isEmpty() && state.totalGoals.volume > 0) volume = state.totalGoals.volume.toLong().toString()
+    // Hidratación una sola vez cuando aparece el budget en la base
+    var hydrated by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state.isLoaded, state.budget?.id) {
+        val b = state.budget
+        if (state.isLoaded && b != null && !hydrated) {
+            branch = b.branchName
+            period = b.period.ifBlank { Formatters.currentPeriod() }
+            days = b.workingDays.toString()
+            advisors = b.advisorCount.toString()
+            volume = if (b.goalVolume == 0.0) "" else b.goalVolume.toLong().toString()
+            credit = if (b.goalCredit == 0.0) "" else b.goalCredit.toLong().toString()
+            warranty = if (b.goalWarranty == 0.0) "" else b.goalWarranty.toLong().toString()
+            cashCredit = if (b.goalCashCredit == 0.0) "" else b.goalCashCredit.toLong().toString()
+            phones = if (b.goalPhones == 0.0) "" else b.goalPhones.toLong().toString()
+            hydrated = true
+        }
     }
 
     Scaffold(
@@ -106,12 +123,14 @@ fun BudgetSetupScreen(
             )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value = days, onValueChange = { days = it.filter { c -> c.isDigit() } },
+                    value = days,
+                    onValueChange = { v -> days = v.filter { c -> c.isDigit() }.take(2) },
                     label = { Text("Días laborales (1-31)") },
                     modifier = Modifier.weight(1f)
                 )
                 OutlinedTextField(
-                    value = advisors, onValueChange = { advisors = it.filter { c -> c.isDigit() } },
+                    value = advisors,
+                    onValueChange = { v -> advisors = v.filter { c -> c.isDigit() }.take(2) },
                     label = { Text("Cant. asesores (1-50)") },
                     modifier = Modifier.weight(1f)
                 )
@@ -129,26 +148,28 @@ fun BudgetSetupScreen(
 
             Button(
                 onClick = {
-                    viewModel.updateBranchName(branch)
-                    viewModel.updatePeriod(period)
-                    viewModel.updateWorkingDays(days.toIntOrNull() ?: 22)
-                    viewModel.updateAdvisorCount(advisors.toIntOrNull() ?: 1)
-                    viewModel.updateTotalGoals(
-                        VariableSet(
+                    scope.launch {
+                        val goals = VariableSet(
                             volume = Formatters.toDouble(volume),
                             credit = Formatters.toDouble(credit),
                             warranty = Formatters.toDouble(warranty),
                             cashCredit = Formatters.toDouble(cashCredit),
                             phones = Formatters.toDouble(phones)
                         )
-                    )
-                    viewModel.saveBranchBudget()
-                    Toast.makeText(context, "Presupuesto guardado", Toast.LENGTH_SHORT).show()
-                    onContinue()
+                        viewModel.saveBranchBudget(
+                            branchName = branch,
+                            period = period,
+                            workingDays = days.toIntOrNull() ?: 22,
+                            advisorCount = advisors.toIntOrNull() ?: 1,
+                            totalGoals = goals
+                        )
+                        Toast.makeText(context, "Presupuesto guardado", Toast.LENGTH_SHORT).show()
+                        onContinue()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) {
-                Text("Continuar a Distribución")
+                Text("Guardar y continuar")
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(Icons.Default.ArrowForward, contentDescription = null)
             }
