@@ -69,9 +69,9 @@ object ExportImportHelper {
     }
 
     /**
-     * Intent específico para WhatsApp. Usa mime `*/*` porque WhatsApp suele
-     * rechazar `application/json`. Lanzar con setPackage("com.whatsapp").
-     * Si WhatsApp no está instalado, lanzará ActivityNotFoundException.
+     * Intent específico para WhatsApp. Usa mime "asterisco/asterisco" porque WhatsApp
+     * suele rechazar "application/json". Si WhatsApp no está instalado, lanzará
+     * ActivityNotFoundException — la UI debe atraparlo.
      */
     fun whatsappIntent(uri: Uri, businessVersion: Boolean = false): Intent =
         shareIntent(uri, mimeType = "*/*").apply {
