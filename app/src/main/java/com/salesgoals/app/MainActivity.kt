@@ -1,7 +1,9 @@
 package com.salesgoals.app
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -17,6 +19,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import com.salesgoals.app.ui.navigation.AppNavGraph
 import com.salesgoals.app.ui.theme.SalesGoalsTheme
+import com.salesgoals.app.utils.PendingImport
 
 class MainActivity : ComponentActivity() {
 
@@ -27,6 +30,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, true)
         ensureNotificationPermission()
+        // Capturamos el intent inicial (puede traer un archivo a importar)
+        captureIncomingFile(intent)
         setContent {
             SalesGoalsTheme {
                 Surface(
@@ -36,6 +41,34 @@ class MainActivity : ComponentActivity() {
                     AppRoot()
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        captureIncomingFile(intent)
+    }
+
+    /**
+     * Si el intent es VIEW (alguien abrió un .json con nuestra app)
+     * o SEND (alguien compartió un archivo a nuestra app), guardamos la URI
+     * en PendingImport para que la UI la procese.
+     */
+    private fun captureIncomingFile(intent: Intent?) {
+        val uri: Uri? = when (intent?.action) {
+            Intent.ACTION_VIEW -> intent.data
+            Intent.ACTION_SEND -> {
+                @Suppress("DEPRECATION")
+                if (Build.VERSION.SDK_INT >= 33)
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                else
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM)
+            }
+            else -> null
+        }
+        if (uri != null) {
+            PendingImport.set(uri)
         }
     }
 

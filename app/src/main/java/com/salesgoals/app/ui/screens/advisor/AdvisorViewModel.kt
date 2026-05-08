@@ -56,7 +56,8 @@ class AdvisorViewModel(
         entries: List<DailyEntryEntity>
     ): AdvisorUiState {
         val workingDays = (budget?.workingDays ?: 22).coerceIn(1, 31)
-        val daysElapsed = Formatters.elapsedWorkingDays(workingDays).coerceAtLeast(1)
+        val period = budget?.period?.ifBlank { Formatters.currentPeriod() } ?: Formatters.currentPeriod()
+        val daysElapsed = Formatters.elapsedWorkingDays(workingDays, period).coerceAtLeast(1)
         val accumulated = entries.fold(VariableSet.ZERO) { acc, e -> acc + e.toSet() }
         val goals = budget?.toGoals() ?: VariableSet.ZERO
         val progress = VariableType.values().map { type ->

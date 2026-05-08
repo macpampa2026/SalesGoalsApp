@@ -18,8 +18,8 @@ object ExportImportHelper {
     }
 
     /**
-     * Genera el archivo JSON del presupuesto del asesor en cache externo
-     * y devuelve la Uri lista para compartir.
+     * Genera el archivo JSON o CSV del presupuesto del asesor en cache
+     * y devuelve la Uri lista para compartir vía FileProvider.
      */
     fun exportAdvisorPayload(
         context: Context,
@@ -46,33 +46,49 @@ object ExportImportHelper {
     fun importPayload(context: Context, uri: Uri): AdvisorBudgetPayload {
         val text = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
             ?: throw IllegalArgumentException("No se pudo leer el archivo")
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) throw IllegalArgumentException("Archivo vacío")
         return when {
-            text.trimStart().startsWith("{") -> json.decodeFromString(text)
-            else -> csvToPayload(text)
+            trimmed.startsWith("{") -> json.decodeFromString(trimmed)
+            else -> csvToPayload(trimmed)
         }
     }
 
-    fun shareIntent(uri: Uri, format: ExportFormat = ExportFormat.JSON): Intent {
-        val mime = if (format == ExportFormat.JSON) "application/json" else "text/csv"
-        return Intent(Intent.ACTION_SEND).apply {
-            type = mime
-            putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_SUBJECT, "Presupuesto del mes")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    /** Intent genérico para "Compartir vía…" — wrapeá con Intent.createChooser en la UI. */
+    fun shareIntent(
+        uri: Uri,
+        mimeType: String = "application/json",
+        subject: String = "Presupuesto del mes",
+        text: String = "Adjunto el presupuesto del mes."
+    ): Intent = Intent(Intent.ACTION_SEND).apply {
+        type = mimeType
+        putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, text)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+
+    /**
+     * Intent específico para WhatsApp. Usa mime `*/*` porque WhatsApp suele
+     * rechazar `application/json`. Lanzar con setPackage("com.whatsapp").
+     * Si WhatsApp no está instalado, lanzará ActivityNotFoundException.
+     */
+    fun whatsappIntent(uri: Uri, businessVersion: Boolean = false): Intent =
+        shareIntent(uri, mimeType = "*/*").apply {
+            setPackage(if (businessVersion) "com.whatsapp.w4b" else "com.whatsapp")
         }
-    }
 
-    fun whatsappIntent(uri: Uri): Intent = shareIntent(uri).apply {
-        setPackage("com.whatsapp")
-    }
-
-    fun emailIntent(uri: Uri): Intent = Intent(Intent.ACTION_SEND).apply {
+    /** Intent para clientes de email. Wrapeá con Intent.createChooser. */
+    fun emailIntent(
+        uri: Uri,
+        subject: String = "Presupuesto Mensual",
+        body: String = "Adjunto el presupuesto del mes."
+    ): Intent = Intent(Intent.ACTION_SEND).apply {
         type = "application/json"
         putExtra(Intent.EXTRA_STREAM, uri)
-        putExtra(Intent.EXTRA_SUBJECT, "Presupuesto Mensual")
-        putExtra(Intent.EXTRA_TEXT, "Adjunto el presupuesto del mes.")
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, body)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        selector = Intent(Intent.ACTION_SENDTO).apply { data = Uri.parse("mailto:") }
     }
 
     private fun sanitize(text: String): String =

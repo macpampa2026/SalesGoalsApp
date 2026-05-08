@@ -38,7 +38,7 @@ class DailyReminderWorker(
         }
 
         val accumulated = entries.fold(com.salesgoals.app.data.models.VariableSet.ZERO) { acc, e -> acc + e.toSet() }
-        val daysElapsed = Formatters.elapsedWorkingDays(budget.workingDays)
+        val daysElapsed = Formatters.elapsedWorkingDays(budget.workingDays, period)
         val goals = budget.toGoals()
 
         val behind = VariableType.values().any { type ->

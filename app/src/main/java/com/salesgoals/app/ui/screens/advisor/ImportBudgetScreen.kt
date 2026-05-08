@@ -47,6 +47,7 @@ import com.salesgoals.app.ui.components.SectionHeader
 import com.salesgoals.app.ui.components.VariableInput
 import com.salesgoals.app.utils.ExportImportHelper
 import com.salesgoals.app.utils.Formatters
+import com.salesgoals.app.utils.PendingImport
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,6 +99,22 @@ fun ImportBudgetScreen(
                 } catch (e: Exception) {
                     Toast.makeText(context, "Error al leer el archivo: ${e.message}", Toast.LENGTH_LONG).show()
                 }
+            }
+        }
+    }
+
+    // Si la app se abrió porque otro programa nos compartió un archivo (intent VIEW/SEND),
+    // consumimos la URI pendiente y la importamos automáticamente.
+    LaunchedEffect(Unit) {
+        val pending = PendingImport.consume()
+        if (pending != null) {
+            try {
+                val payload = ExportImportHelper.importPayload(context, pending)
+                viewModel.applyImportedPayload(payload)
+                Toast.makeText(context, "Presupuesto importado desde el archivo recibido", Toast.LENGTH_SHORT).show()
+                onSuccess()
+            } catch (e: Exception) {
+                Toast.makeText(context, "No se pudo importar: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

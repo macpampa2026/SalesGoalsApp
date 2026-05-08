@@ -1,6 +1,7 @@
 package com.salesgoals.app.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -19,6 +20,7 @@ import com.salesgoals.app.ui.screens.common.DaysConfigScreen
 import com.salesgoals.app.ui.screens.manager.BudgetSetupScreen
 import com.salesgoals.app.ui.screens.manager.DistributionScreen
 import com.salesgoals.app.ui.screens.manager.ManagerDashboardScreen
+import com.salesgoals.app.utils.PendingImport
 
 object Routes {
     const val HOME = "home"
@@ -38,6 +40,17 @@ object Routes {
 
 @Composable
 fun AppNavGraph(navController: NavHostController = rememberNavController()) {
+    // Cuando un archivo entrante (intent VIEW/SEND) deja un URI pendiente,
+    // saltamos directo a la pantalla de import del Asesor.
+    val pendingUri by PendingImport.uri.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingUri) {
+        if (pendingUri != null) {
+            navController.navigate(Routes.ADVISOR_IMPORT) {
+                launchSingleTop = true
+            }
+        }
+    }
+
     NavHost(navController = navController, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
             HomeScreen(
