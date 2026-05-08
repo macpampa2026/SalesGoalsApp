@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,18 +29,25 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesgoals.app.data.models.VariableType
 import com.salesgoals.app.utils.Formatters
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +58,29 @@ fun ManagerDashboardScreen(
     viewModel: ManagerViewModel = viewModel(factory = ManagerViewModel.Factory)
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    var showResetDialog by remember { mutableStateOf(false) }
+
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = { Text("Reiniciar presupuesto") },
+            text = { Text("Se borrará el presupuesto de la sucursal y la lista de asesores. Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showResetDialog = false
+                    scope.launch { viewModel.resetAll() }
+                }) {
+                    Text("Reiniciar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -59,10 +91,16 @@ fun ManagerDashboardScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
+                actions = {
+                    IconButton(onClick = { showResetDialog = true }) {
+                        Icon(Icons.Default.RestartAlt, contentDescription = "Reiniciar / Cargar de nuevo")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -93,12 +131,16 @@ fun ManagerDashboardScreen(
                             Text(
                                 state.branchName.ifBlank { "Sucursal" },
                                 style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 "${state.period} · ${state.advisorCount} asesores · ${state.workingDays} días",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }

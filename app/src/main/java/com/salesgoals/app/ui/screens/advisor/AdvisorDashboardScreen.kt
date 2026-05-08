@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,17 +34,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesgoals.app.ui.components.ProgressCard
 import com.salesgoals.app.utils.Formatters
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +65,31 @@ fun AdvisorDashboardScreen(
     viewModel: AdvisorViewModel = viewModel(factory = AdvisorViewModel.Factory)
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    var showResetDialog by remember { mutableStateOf(false) }
+
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = { Text("Reiniciar todos los datos") },
+            text = {
+                Text("Se borrarán tu presupuesto y todas las cargas diarias. Esta acción no se puede deshacer.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showResetDialog = false
+                    scope.launch { viewModel.resetAll() }
+                }) {
+                    Text("Reiniciar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -66,10 +100,16 @@ fun AdvisorDashboardScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
+                actions = {
+                    IconButton(onClick = { showResetDialog = true }) {
+                        Icon(Icons.Default.RestartAlt, contentDescription = "Reiniciar / Cargar de nuevo")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -200,13 +240,21 @@ private fun HeaderInfo(state: AdvisorUiState) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             val name = state.budget?.ownerName?.ifBlank { "Asesor" } ?: "Asesor"
-            Text(name, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimary)
+            Text(
+                name,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
             Spacer(modifier = Modifier.height(4.dp))
             val period = state.budget?.period?.ifBlank { Formatters.currentPeriod() } ?: Formatters.currentPeriod()
             Text(
                 "Periodo $period · Día ${state.daysElapsed} / ${state.workingDays}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = MaterialTheme.colorScheme.onPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

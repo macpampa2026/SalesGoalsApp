@@ -70,10 +70,16 @@ fun ImportBudgetScreen(
     var cashCredit by rememberSaveable { mutableStateOf("") }
     var phones by rememberSaveable { mutableStateOf("") }
 
-    var hydrated by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(state.isLoaded, state.budget?.id) {
+    val budgetSignature = state.budget?.let { "${it.id}-${it.updatedAt}" } ?: ""
+    LaunchedEffect(state.isLoaded, budgetSignature) {
+        if (!state.isLoaded) return@LaunchedEffect
         val b = state.budget
-        if (state.isLoaded && b != null && !hydrated) {
+        if (b == null) {
+            name = ""
+            period = Formatters.currentPeriod()
+            workingDays = "22"
+            volume = ""; credit = ""; warranty = ""; cashCredit = ""; phones = ""
+        } else {
             name = b.ownerName
             period = b.period.ifBlank { Formatters.currentPeriod() }
             workingDays = b.workingDays.toString()
@@ -82,7 +88,6 @@ fun ImportBudgetScreen(
             warranty = if (b.goalWarranty == 0.0) "" else b.goalWarranty.toLong().toString()
             cashCredit = if (b.goalCashCredit == 0.0) "" else b.goalCashCredit.toLong().toString()
             phones = if (b.goalPhones == 0.0) "" else b.goalPhones.toLong().toString()
-            hydrated = true
         }
     }
 

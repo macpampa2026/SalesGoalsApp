@@ -66,11 +66,19 @@ fun BudgetSetupScreen(
     var cashCredit by rememberSaveable { mutableStateOf("") }
     var phones by rememberSaveable { mutableStateOf("") }
 
-    // Hidratación una sola vez cuando aparece el budget en la base
-    var hydrated by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(state.isLoaded, state.budget?.id) {
+    // Hidratamos los inputs cada vez que cambia la "huella" del budget
+    // (id + updatedAt). Si el budget desaparece (reset), limpiamos los inputs.
+    val budgetSignature = state.budget?.let { "${it.id}-${it.updatedAt}" } ?: ""
+    LaunchedEffect(state.isLoaded, budgetSignature) {
+        if (!state.isLoaded) return@LaunchedEffect
         val b = state.budget
-        if (state.isLoaded && b != null && !hydrated) {
+        if (b == null) {
+            branch = ""
+            period = Formatters.currentPeriod()
+            days = "22"
+            advisors = "1"
+            volume = ""; credit = ""; warranty = ""; cashCredit = ""; phones = ""
+        } else {
             branch = b.branchName
             period = b.period.ifBlank { Formatters.currentPeriod() }
             days = b.workingDays.toString()
@@ -80,7 +88,6 @@ fun BudgetSetupScreen(
             warranty = if (b.goalWarranty == 0.0) "" else b.goalWarranty.toLong().toString()
             cashCredit = if (b.goalCashCredit == 0.0) "" else b.goalCashCredit.toLong().toString()
             phones = if (b.goalPhones == 0.0) "" else b.goalPhones.toLong().toString()
-            hydrated = true
         }
     }
 

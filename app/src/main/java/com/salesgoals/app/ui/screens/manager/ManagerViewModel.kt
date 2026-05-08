@@ -125,6 +125,12 @@ class ManagerViewModel(
         )
     }
 
+    /** Borra el presupuesto de la sucursal. */
+    suspend fun resetAll() {
+        repository.resetManagerAll()
+        advisorNames.value = listOf("Asesor 1")
+    }
+
     fun buildPayloadFor(advisorName: String): AdvisorBudgetPayload {
         val s = state.value
         return AdvisorBudgetPayload(

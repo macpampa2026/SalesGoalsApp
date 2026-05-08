@@ -45,6 +45,17 @@ class SalesRepository(
     suspend fun deleteEntry(date: String) = dailyEntryDao.deleteByDate(date)
     suspend fun clearEntries() = dailyEntryDao.clear()
 
+    /** Borra presupuesto del asesor + todas las cargas diarias. */
+    suspend fun resetAdvisorAll() {
+        budgetDao.deleteById(1)
+        dailyEntryDao.clear()
+    }
+
+    /** Borra solo el presupuesto de la sucursal. */
+    suspend fun resetManagerAll() {
+        budgetDao.deleteById(2)
+    }
+
     /** Aplica un payload importado por el asesor. */
     suspend fun applyImportedBudget(payload: AdvisorBudgetPayload) {
         saveAdvisorBudget(

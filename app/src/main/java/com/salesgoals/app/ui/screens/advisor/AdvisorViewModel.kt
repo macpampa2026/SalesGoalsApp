@@ -105,6 +105,11 @@ class AdvisorViewModel(
         repository.applyImportedBudget(payload)
     }
 
+    /** Borra todo: presupuesto del asesor + cargas diarias. */
+    suspend fun resetAll() {
+        repository.resetAdvisorAll()
+    }
+
     suspend fun saveManualBudget(
         advisorName: String,
         period: String,

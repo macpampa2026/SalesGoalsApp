@@ -3,10 +3,22 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Barras crecientes estilo objetivo de ventas, blancas sobre el fondo azul -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M30,72 L30,55 L42,55 L42,72 Z M48,72 L48,40 L60,40 L60,72 Z M66,72 L66,28 L78,28 L78,72 Z" />
+        android:pathData="M30,72 L30,55 L42,55 L42,72 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,72 L48,40 L60,40 L60,72 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,72 L66,28 L78,28 L78,72 Z" />
+    <!-- Línea base -->
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M28,80 L82,80 L82,84 L28,84 Z" />
+    <!-- Flecha indicando crecimiento -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M72,22 L78,28 L66,28 Z" />
 </vector>
