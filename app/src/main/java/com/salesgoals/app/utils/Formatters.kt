@@ -50,6 +50,19 @@ object Formatters {
         }
     }
 
+    /** Devuelve true si el período tiene formato válido YYYY-MM con MM 01-12. */
+    fun isValidPeriod(period: String): Boolean {
+        val parts = period.split("-")
+        if (parts.size != 2) return false
+        val y = parts[0].toIntOrNull() ?: return false
+        val m = parts[1].toIntOrNull() ?: return false
+        return y in 2000..2100 && m in 1..12
+    }
+
+    /** Si el período no es válido, devuelve el actual. */
+    fun safePeriod(period: String?): String =
+        if (period != null && isValidPeriod(period)) period else currentPeriod()
+
     fun friendlyDate(date: String): String {
         return try {
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)

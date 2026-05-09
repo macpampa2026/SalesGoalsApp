@@ -108,6 +108,30 @@ fun MonthlyGridScreen(
             contentPadding = PaddingValues(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            if (state.budget == null) {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                "ℹ️ No hay presupuesto cargado",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Text(
+                                "Podés cargar ventas igualmente, pero los objetivos diarios automáticos serán 0. Andá al Dashboard y cargá tu presupuesto para tener metas.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+                }
+            }
             item {
                 SummaryCard(totalTarget = totalTarget, totalSales = totalSales)
             }

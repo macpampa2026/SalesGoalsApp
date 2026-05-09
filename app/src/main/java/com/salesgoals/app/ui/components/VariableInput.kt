@@ -25,6 +25,9 @@ fun VariableInput(
         OutlinedTextField(
             value = value,
             onValueChange = { txt ->
+                // Permite dígitos + un único separador decimal (último , o .).
+                // Acepta otros , o . solo si actúan como separadores de miles
+                // (no se descartan acá; el parser luego decide).
                 val filtered = txt.filter { c -> c.isDigit() || c == ',' || c == '.' }
                 onValueChange(filtered)
             },
@@ -33,7 +36,7 @@ fun VariableInput(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
             supportingText = {
-                Text(if (type.isCurrency) "Monto en $" else "Cantidad de unidades")
+                Text(if (type.isCurrency) "Monto en $ (sin símbolos)" else "Cantidad de unidades")
             }
         )
         Spacer(modifier = Modifier.height(4.dp))

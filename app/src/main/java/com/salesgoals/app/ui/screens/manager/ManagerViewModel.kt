@@ -113,7 +113,7 @@ class ManagerViewModel(
             BudgetEntity(
                 ownerName = "",
                 branchName = branchName,
-                period = period.ifBlank { Formatters.currentPeriod() },
+                period = Formatters.safePeriod(period),
                 workingDays = workingDays.coerceIn(1, 31),
                 advisorCount = advisorCount.coerceIn(1, 50),
                 goalVolume = totalGoals.volume,

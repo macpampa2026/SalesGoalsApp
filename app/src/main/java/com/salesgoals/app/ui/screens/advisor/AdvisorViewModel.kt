@@ -120,7 +120,7 @@ class AdvisorViewModel(
             BudgetEntity(
                 ownerName = advisorName,
                 branchName = "",
-                period = period.ifBlank { Formatters.currentPeriod() },
+                period = Formatters.safePeriod(period),
                 workingDays = workingDays.coerceIn(1, 31),
                 advisorCount = 1,
                 goalVolume = goals.volume,

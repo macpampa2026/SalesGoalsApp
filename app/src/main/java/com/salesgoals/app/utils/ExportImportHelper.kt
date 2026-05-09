@@ -28,6 +28,13 @@ object ExportImportHelper {
     ): Uri {
         val baseName = "presupuesto_${sanitize(payload.advisorName)}_${payload.period}"
         val dir = File(context.cacheDir, "exports").apply { if (!exists()) mkdirs() }
+
+        // Limpio archivos viejos del cache (más de 24h) para no acumular basura
+        val cutoff = System.currentTimeMillis() - 24L * 60 * 60 * 1000
+        dir.listFiles()?.forEach { f ->
+            if (f.lastModified() < cutoff) f.delete()
+        }
+
         val file: File = when (format) {
             ExportFormat.JSON -> File(dir, "$baseName.json").apply {
                 writeText(json.encodeToString(payload))

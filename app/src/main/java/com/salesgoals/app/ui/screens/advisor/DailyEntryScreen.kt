@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -54,24 +55,28 @@ fun DailyEntryScreen(
 ) {
     val targetDate = date ?: Formatters.today()
 
-    var volume by remember { mutableStateOf("") }
-    var credit by remember { mutableStateOf("") }
-    var warranty by remember { mutableStateOf("") }
-    var cashCredit by remember { mutableStateOf("") }
-    var phones by remember { mutableStateOf("") }
+    var volume by rememberSaveable { mutableStateOf("") }
+    var credit by rememberSaveable { mutableStateOf("") }
+    var warranty by rememberSaveable { mutableStateOf("") }
+    var cashCredit by rememberSaveable { mutableStateOf("") }
+    var phones by rememberSaveable { mutableStateOf("") }
 
-    var tVolume by remember { mutableStateOf("") }
-    var tCredit by remember { mutableStateOf("") }
-    var tWarranty by remember { mutableStateOf("") }
-    var tCashCredit by remember { mutableStateOf("") }
-    var tPhones by remember { mutableStateOf("") }
+    var tVolume by rememberSaveable { mutableStateOf("") }
+    var tCredit by rememberSaveable { mutableStateOf("") }
+    var tWarranty by rememberSaveable { mutableStateOf("") }
+    var tCashCredit by rememberSaveable { mutableStateOf("") }
+    var tPhones by rememberSaveable { mutableStateOf("") }
 
-    var note by remember { mutableStateOf("") }
+    var note by rememberSaveable { mutableStateOf("") }
+    var hydratedDate by rememberSaveable { mutableStateOf("") }
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(targetDate) {
+        // Solo hidratamos una vez por fecha para no pisar inputs del usuario.
+        if (hydratedDate == targetDate) return@LaunchedEffect
+        hydratedDate = targetDate
         val existing = viewModel.repository.getEntry(targetDate)
         if (existing != null) {
             volume = if (existing.volume == 0.0) "" else existing.volume.toLong().toString()
