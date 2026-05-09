@@ -23,9 +23,12 @@ object Formatters {
         minimumFractionDigits = 0
     }
 
-    fun money(value: Double): String = currencyFormat.format(value)
-    fun units(value: Double): String = numberFormat.format(value)
-    fun percent(value: Double): String = "${percentFormat.format(value)}%"
+    private fun safe(value: Double): Double =
+        if (value.isFinite()) value else 0.0
+
+    fun money(value: Double): String = currencyFormat.format(safe(value))
+    fun units(value: Double): String = numberFormat.format(safe(value))
+    fun percent(value: Double): String = "${percentFormat.format(safe(value))}%"
 
     fun formatValue(value: Double, isCurrency: Boolean): String =
         if (isCurrency) money(value) else units(value)

@@ -83,7 +83,10 @@ fun ProgressCard(progress: VariableProgress, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(8.dp))
 
             LinearProgressIndicator(
-                progress = { (progress.percent.toFloat() / 100f).coerceIn(0f, 1f) },
+                progress = {
+                    val raw = (progress.percent.toFloat() / 100f)
+                    if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(10.dp)

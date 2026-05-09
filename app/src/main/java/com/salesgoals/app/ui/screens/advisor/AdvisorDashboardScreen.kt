@@ -1,5 +1,6 @@
 package com.salesgoals.app.ui.screens.advisor
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,9 +43,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,7 +69,8 @@ fun AdvisorDashboardScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    var showResetDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    var showResetDialog by rememberSaveable { mutableStateOf(false) }
 
     if (showResetDialog) {
         AlertDialog(
@@ -78,7 +82,10 @@ fun AdvisorDashboardScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showResetDialog = false
-                    scope.launch { viewModel.resetAll() }
+                    scope.launch {
+                        viewModel.resetAll()
+                        Toast.makeText(context, "Datos borrados", Toast.LENGTH_SHORT).show()
+                    }
                 }) {
                     Text("Reiniciar", color = MaterialTheme.colorScheme.error)
                 }

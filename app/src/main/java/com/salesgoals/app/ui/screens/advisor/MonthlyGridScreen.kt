@@ -242,13 +242,16 @@ private fun DayRow(cell: DayCell, onClick: () -> Unit) {
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    "Cel: ${cell.sales.phones.toLong()} / ${cell.target.phones.toLong()}  ·  Créd: ${Formatters.money(cell.sales.credit)}",
+                    "Cel: ${safeLong(cell.sales.phones)} / ${safeLong(cell.target.phones)}  ·  Créd: ${Formatters.money(cell.sales.credit)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 LinearProgressIndicator(
-                    progress = { pct.toFloat().coerceIn(0f, 1f) },
+                    progress = {
+                        val raw = pct.toFloat()
+                        if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f
+                    },
                     modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
                     color = color,
                     trackColor = color.copy(alpha = 0.15f)
@@ -311,4 +314,10 @@ private fun buildDayCells(
             isCustomTarget = customTarget != null
         )
     }
+}
+
+/** Convierte Double a Long con safety contra NaN/Infinity/overflow. */
+private fun safeLong(value: Double): Long {
+    if (!value.isFinite()) return 0L
+    return value.coerceAtMost(Long.MAX_VALUE.toDouble()).coerceAtLeast(0.0).toLong()
 }
