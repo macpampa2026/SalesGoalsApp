@@ -35,7 +35,6 @@ object Routes {
     const val MANAGER_DASH = "manager/dashboard"
     const val MANAGER_SETUP = "manager/setup"
     const val MANAGER_DIST = "manager/distribution"
-    const val MANAGER_DAYS = "manager/days"
 }
 
 @Composable
@@ -44,10 +43,11 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
     // saltamos directo a la pantalla de import del Asesor.
     val pendingUri by PendingImport.uri.collectAsStateWithLifecycle()
     LaunchedEffect(pendingUri) {
-        if (pendingUri != null) {
-            navController.navigate(Routes.ADVISOR_IMPORT) {
-                launchSingleTop = true
-            }
+        // Solo navegamos cuando llega una URI nueva. El reset a null tras consumir
+        // no debe disparar otra navegación.
+        if (pendingUri == null) return@LaunchedEffect
+        navController.navigate(Routes.ADVISOR_IMPORT) {
+            launchSingleTop = true
         }
     }
 

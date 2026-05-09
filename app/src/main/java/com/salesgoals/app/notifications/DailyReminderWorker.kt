@@ -79,9 +79,12 @@ class DailyReminderWorker(
                 .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
                 .build()
 
+            // KEEP: si ya existe agendado, no lo reseteamos en cada cold-start.
+            // Antes con UPDATE, abrir la app después de las 19:00 movía el recordatorio
+            // al día siguiente para siempre.
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.UPDATE,
+                ExistingPeriodicWorkPolicy.KEEP,
                 request
             )
         }

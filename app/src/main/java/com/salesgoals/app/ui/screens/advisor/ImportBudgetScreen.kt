@@ -70,9 +70,15 @@ fun ImportBudgetScreen(
     var cashCredit by rememberSaveable { mutableStateOf("") }
     var phones by rememberSaveable { mutableStateOf("") }
 
-    val budgetSignature = state.budget?.let { "${it.id}-${it.updatedAt}" } ?: ""
+    var lastHydratedSig by rememberSaveable { mutableStateOf("") }
+    var isSaving by rememberSaveable { mutableStateOf(false) }
+    val budgetSignature = state.budget?.let { "${it.id}-${it.updatedAt}" } ?: "EMPTY"
     LaunchedEffect(state.isLoaded, budgetSignature) {
         if (!state.isLoaded) return@LaunchedEffect
+        val wasEmpty = lastHydratedSig == "EMPTY"
+        val isEmpty = budgetSignature == "EMPTY"
+        if (lastHydratedSig.isNotEmpty() && wasEmpty == isEmpty) return@LaunchedEffect
+
         val b = state.budget
         if (b == null) {
             name = ""
@@ -81,14 +87,15 @@ fun ImportBudgetScreen(
             volume = ""; credit = ""; warranty = ""; cashCredit = ""; phones = ""
         } else {
             name = b.ownerName
-            period = b.period.ifBlank { Formatters.currentPeriod() }
+            period = Formatters.safePeriod(b.period)
             workingDays = b.workingDays.toString()
-            volume = if (b.goalVolume == 0.0) "" else b.goalVolume.toLong().toString()
-            credit = if (b.goalCredit == 0.0) "" else b.goalCredit.toLong().toString()
-            warranty = if (b.goalWarranty == 0.0) "" else b.goalWarranty.toLong().toString()
-            cashCredit = if (b.goalCashCredit == 0.0) "" else b.goalCashCredit.toLong().toString()
-            phones = if (b.goalPhones == 0.0) "" else b.goalPhones.toLong().toString()
+            volume = safeLongString(b.goalVolume)
+            credit = safeLongString(b.goalCredit)
+            warranty = safeLongString(b.goalWarranty)
+            cashCredit = safeLongString(b.goalCashCredit)
+            phones = safeLongString(b.goalPhones)
         }
+        lastHydratedSig = budgetSignature
     }
 
     val pickFile = rememberLauncherForActivityResult(
@@ -167,13 +174,21 @@ fun ImportBudgetScreen(
             SectionHeader(title = "O cargar manualmente", subtitle = "Ingresá tus objetivos y días")
 
             OutlinedTextField(
-                value = name, onValueChange = { name = it },
+                value = name, onValueChange = { name = it.replace("\n", "") },
                 label = { Text("Tu nombre") },
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = period, onValueChange = { period = it },
+                value = period, onValueChange = { period = it.replace("\n", "") },
                 label = { Text("Periodo (YYYY-MM)") },
+                singleLine = true,
+                isError = period.isNotBlank() && !Formatters.isValidPeriod(period),
+                supportingText = {
+                    if (period.isNotBlank() && !Formatters.isValidPeriod(period)) {
+                        Text("Formato inválido — usá YYYY-MM (ej. 2026-05)")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
@@ -189,19 +204,28 @@ fun ImportBudgetScreen(
             VariableInput(VariableType.PHONES, phones) { phones = it }
 
             FilledTonalButton(
+                enabled = !isSaving,
                 onClick = {
+                    if (isSaving) return@FilledTonalButton
+                    isSaving = true
                     scope.launch {
-                        val days = workingDays.toIntOrNull() ?: 22
-                        val goals = VariableSet(
-                            volume = Formatters.toDouble(volume),
-                            credit = Formatters.toDouble(credit),
-                            warranty = Formatters.toDouble(warranty),
-                            cashCredit = Formatters.toDouble(cashCredit),
-                            phones = Formatters.toDouble(phones)
-                        )
-                        viewModel.saveManualBudget(name, period, days, goals)
-                        Toast.makeText(context, "Presupuesto guardado", Toast.LENGTH_SHORT).show()
-                        onSuccess()
+                        try {
+                            val days = workingDays.toIntOrNull() ?: 22
+                            val goals = VariableSet(
+                                volume = Formatters.toDouble(volume).coerceAtLeast(0.0),
+                                credit = Formatters.toDouble(credit).coerceAtLeast(0.0),
+                                warranty = Formatters.toDouble(warranty).coerceAtLeast(0.0),
+                                cashCredit = Formatters.toDouble(cashCredit).coerceAtLeast(0.0),
+                                phones = Formatters.toDouble(phones).coerceAtLeast(0.0)
+                            )
+                            viewModel.saveManualBudget(name.trim(), period.trim(), days, goals)
+                            Toast.makeText(context, "Presupuesto guardado", Toast.LENGTH_SHORT).show()
+                            onSuccess()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Error al guardar: ${e.message}", Toast.LENGTH_LONG).show()
+                        } finally {
+                            isSaving = false
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp)
@@ -212,4 +236,11 @@ fun ImportBudgetScreen(
             }
         }
     }
+}
+
+/** Convierte un Double a string entero, manejando NaN/Infinity. */
+private fun safeLongString(value: Double): String {
+    if (!value.isFinite() || value <= 0.0) return ""
+    val capped = value.coerceAtMost(Long.MAX_VALUE.toDouble())
+    return capped.toLong().toString()
 }

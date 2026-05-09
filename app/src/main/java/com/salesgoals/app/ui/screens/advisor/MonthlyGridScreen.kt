@@ -277,8 +277,8 @@ private fun buildDayCells(
     entries: List<DailyEntryEntity>,
     defaultDaily: VariableSet
 ): List<DayCell> {
+    if (!Formatters.isValidPeriod(period)) return emptyList()
     val parts = period.split("-")
-    if (parts.size < 2) return emptyList()
     val year = parts[0].toIntOrNull() ?: return emptyList()
     val month = parts[1].toIntOrNull() ?: return emptyList()
 

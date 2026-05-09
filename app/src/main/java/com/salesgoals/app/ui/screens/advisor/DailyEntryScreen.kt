@@ -69,27 +69,27 @@ fun DailyEntryScreen(
 
     var note by rememberSaveable { mutableStateOf("") }
     var hydratedDate by rememberSaveable { mutableStateOf("") }
+    var isSaving by rememberSaveable { mutableStateOf(false) }
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(targetDate) {
-        // Solo hidratamos una vez por fecha para no pisar inputs del usuario.
         if (hydratedDate == targetDate) return@LaunchedEffect
         hydratedDate = targetDate
         val existing = viewModel.repository.getEntry(targetDate)
         if (existing != null) {
-            volume = if (existing.volume == 0.0) "" else existing.volume.toLong().toString()
-            credit = if (existing.credit == 0.0) "" else existing.credit.toLong().toString()
-            warranty = if (existing.warranty == 0.0) "" else existing.warranty.toLong().toString()
-            cashCredit = if (existing.cashCredit == 0.0) "" else existing.cashCredit.toLong().toString()
-            phones = if (existing.phones == 0.0) "" else existing.phones.toLong().toString()
+            volume = safeLongString(existing.volume)
+            credit = safeLongString(existing.credit)
+            warranty = safeLongString(existing.warranty)
+            cashCredit = safeLongString(existing.cashCredit)
+            phones = safeLongString(existing.phones)
 
-            tVolume = if (existing.targetVolume == 0.0) "" else existing.targetVolume.toLong().toString()
-            tCredit = if (existing.targetCredit == 0.0) "" else existing.targetCredit.toLong().toString()
-            tWarranty = if (existing.targetWarranty == 0.0) "" else existing.targetWarranty.toLong().toString()
-            tCashCredit = if (existing.targetCashCredit == 0.0) "" else existing.targetCashCredit.toLong().toString()
-            tPhones = if (existing.targetPhones == 0.0) "" else existing.targetPhones.toLong().toString()
+            tVolume = safeLongString(existing.targetVolume)
+            tCredit = safeLongString(existing.targetCredit)
+            tWarranty = safeLongString(existing.targetWarranty)
+            tCashCredit = safeLongString(existing.targetCashCredit)
+            tPhones = safeLongString(existing.targetPhones)
 
             note = existing.note
         }
@@ -164,24 +164,31 @@ fun DailyEntryScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(
+                enabled = !isSaving,
                 onClick = {
+                    if (isSaving) return@Button
+                    isSaving = true
                     scope.launch {
-                        val entry = DailyEntryEntity(
-                            date = targetDate,
-                            volume = Formatters.toDouble(volume),
-                            credit = Formatters.toDouble(credit),
-                            warranty = Formatters.toDouble(warranty),
-                            cashCredit = Formatters.toDouble(cashCredit),
-                            phones = Formatters.toDouble(phones),
-                            targetVolume = Formatters.toDouble(tVolume),
-                            targetCredit = Formatters.toDouble(tCredit),
-                            targetWarranty = Formatters.toDouble(tWarranty),
-                            targetCashCredit = Formatters.toDouble(tCashCredit),
-                            targetPhones = Formatters.toDouble(tPhones),
-                            note = note
-                        )
-                        viewModel.saveDailyEntry(entry)
-                        snackbar.showSnackbar("Guardado correctamente")
+                        try {
+                            val entry = DailyEntryEntity(
+                                date = targetDate,
+                                volume = Formatters.toDouble(volume).coerceAtLeast(0.0),
+                                credit = Formatters.toDouble(credit).coerceAtLeast(0.0),
+                                warranty = Formatters.toDouble(warranty).coerceAtLeast(0.0),
+                                cashCredit = Formatters.toDouble(cashCredit).coerceAtLeast(0.0),
+                                phones = Formatters.toDouble(phones).coerceAtLeast(0.0),
+                                targetVolume = Formatters.toDouble(tVolume).coerceAtLeast(0.0),
+                                targetCredit = Formatters.toDouble(tCredit).coerceAtLeast(0.0),
+                                targetWarranty = Formatters.toDouble(tWarranty).coerceAtLeast(0.0),
+                                targetCashCredit = Formatters.toDouble(tCashCredit).coerceAtLeast(0.0),
+                                targetPhones = Formatters.toDouble(tPhones).coerceAtLeast(0.0),
+                                note = note.take(500)
+                            )
+                            viewModel.saveDailyEntry(entry)
+                            snackbar.showSnackbar("Guardado correctamente")
+                        } finally {
+                            isSaving = false
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp)
@@ -192,4 +199,11 @@ fun DailyEntryScreen(
             }
         }
     }
+}
+
+/** Convierte un Double a string entero, manejando NaN/Infinity. */
+private fun safeLongString(value: Double): String {
+    if (!value.isFinite() || value <= 0.0) return ""
+    val capped = value.coerceAtMost(Long.MAX_VALUE.toDouble())
+    return capped.toLong().toString()
 }

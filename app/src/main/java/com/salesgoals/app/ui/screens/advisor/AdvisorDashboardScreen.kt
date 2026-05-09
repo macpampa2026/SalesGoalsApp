@@ -114,7 +114,14 @@ fun AdvisorDashboardScreen(
             )
         }
     ) { padding ->
-        if (state.budget == null) {
+        if (!state.isLoaded) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.CircularProgressIndicator()
+            }
+        } else if (state.budget == null) {
             EmptyAdvisor(
                 modifier = Modifier
                     .padding(padding)

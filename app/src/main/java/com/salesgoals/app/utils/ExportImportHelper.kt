@@ -112,7 +112,7 @@ object ExportImportHelper {
         appendLine("garantia,${p.goals.warranty}")
         appendLine("credito_efectivo,${p.goals.cashCredit}")
         appendLine("celulares,${p.goals.phones}")
-        appendLine("notas,\"${p.notes.replace("\"", "'")}\"")
+        appendLine("notas,\"${p.notes.replace("\"", "'").replace("\n", " ").replace("\r", " ")}\"")
     }
 
     private fun csvToPayload(text: String): AdvisorBudgetPayload {

@@ -56,10 +56,14 @@ class ManagerViewModel(
         val perAdvisor = totalGoals / advisorCount
         val perDay = if (workingDays > 0) perAdvisor / workingDays else perAdvisor
         val syncedNames = adjustList(names, advisorCount)
+        // Sincronizamos el StateFlow real solo si difiere, sin loop:
+        if (syncedNames.size != names.size) {
+            advisorNames.value = syncedNames
+        }
         ManagerUiState(
             budget = budget,
             branchName = budget?.branchName.orEmpty(),
-            period = budget?.period?.ifBlank { Formatters.currentPeriod() } ?: Formatters.currentPeriod(),
+            period = Formatters.safePeriod(budget?.period),
             workingDays = workingDays,
             advisorCount = advisorCount,
             totalGoals = totalGoals,
@@ -69,19 +73,6 @@ class ManagerViewModel(
             isLoaded = true
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ManagerUiState())
-
-    init {
-        // Si el budget cambia el advisorCount, ajustamos la lista de nombres
-        viewModelScope.launch {
-            repository.observeManagerBudget().collect { budget ->
-                val safe = (budget?.advisorCount ?: 1).coerceIn(1, 50)
-                val current = advisorNames.value
-                if (current.size != safe) {
-                    advisorNames.value = adjustList(current, safe)
-                }
-            }
-        }
-    }
 
     fun updateAdvisorName(index: Int, name: String) {
         val list = advisorNames.value.toMutableList()

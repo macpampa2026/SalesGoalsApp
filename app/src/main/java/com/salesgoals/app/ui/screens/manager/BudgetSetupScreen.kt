@@ -66,11 +66,21 @@ fun BudgetSetupScreen(
     var cashCredit by rememberSaveable { mutableStateOf("") }
     var phones by rememberSaveable { mutableStateOf("") }
 
-    // Hidratamos los inputs cada vez que cambia la "huella" del budget
-    // (id + updatedAt). Si el budget desaparece (reset), limpiamos los inputs.
-    val budgetSignature = state.budget?.let { "${it.id}-${it.updatedAt}" } ?: ""
+    // Hidratamos los inputs SOLO la primera vez que aparece un budget
+    // (o cuando se hace reset). No pisamos los inputs del usuario si Room emite
+    // mientras está tipeando.
+    var lastHydratedSig by rememberSaveable { mutableStateOf("") }
+    var isSaving by rememberSaveable { mutableStateOf(false) }
+    val budgetSignature = state.budget?.let { "${it.id}-${it.updatedAt}" } ?: "EMPTY"
     LaunchedEffect(state.isLoaded, budgetSignature) {
         if (!state.isLoaded) return@LaunchedEffect
+        // Solo hidrato si:
+        // - Es la primera vez (lastHydratedSig vacío)
+        // - O el budget pasó de null a no-null o viceversa (reset/load)
+        val wasEmpty = lastHydratedSig == "EMPTY"
+        val isEmpty = budgetSignature == "EMPTY"
+        if (lastHydratedSig.isNotEmpty() && wasEmpty == isEmpty) return@LaunchedEffect
+
         val b = state.budget
         if (b == null) {
             branch = ""
@@ -80,15 +90,16 @@ fun BudgetSetupScreen(
             volume = ""; credit = ""; warranty = ""; cashCredit = ""; phones = ""
         } else {
             branch = b.branchName
-            period = b.period.ifBlank { Formatters.currentPeriod() }
+            period = Formatters.safePeriod(b.period)
             days = b.workingDays.toString()
             advisors = b.advisorCount.toString()
-            volume = if (b.goalVolume == 0.0) "" else b.goalVolume.toLong().toString()
-            credit = if (b.goalCredit == 0.0) "" else b.goalCredit.toLong().toString()
-            warranty = if (b.goalWarranty == 0.0) "" else b.goalWarranty.toLong().toString()
-            cashCredit = if (b.goalCashCredit == 0.0) "" else b.goalCashCredit.toLong().toString()
-            phones = if (b.goalPhones == 0.0) "" else b.goalPhones.toLong().toString()
+            volume = safeLongString(b.goalVolume)
+            credit = safeLongString(b.goalCredit)
+            warranty = safeLongString(b.goalWarranty)
+            cashCredit = safeLongString(b.goalCashCredit)
+            phones = safeLongString(b.goalPhones)
         }
+        lastHydratedSig = budgetSignature
     }
 
     Scaffold(
@@ -119,13 +130,21 @@ fun BudgetSetupScreen(
             SectionHeader(title = "Datos de la sucursal", subtitle = "Configurá los parámetros generales")
 
             OutlinedTextField(
-                value = branch, onValueChange = { branch = it },
+                value = branch, onValueChange = { branch = it.replace("\n", "") },
                 label = { Text("Nombre de la sucursal") },
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = period, onValueChange = { period = it },
+                value = period, onValueChange = { period = it.replace("\n", "") },
                 label = { Text("Periodo (YYYY-MM)") },
+                singleLine = true,
+                isError = period.isNotBlank() && !Formatters.isValidPeriod(period),
+                supportingText = {
+                    if (period.isNotBlank() && !Formatters.isValidPeriod(period)) {
+                        Text("Formato inválido — usá YYYY-MM (ej. 2026-05)")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -154,24 +173,33 @@ fun BudgetSetupScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(
+                enabled = !isSaving,
                 onClick = {
+                    if (isSaving) return@Button
+                    isSaving = true
                     scope.launch {
-                        val goals = VariableSet(
-                            volume = Formatters.toDouble(volume),
-                            credit = Formatters.toDouble(credit),
-                            warranty = Formatters.toDouble(warranty),
-                            cashCredit = Formatters.toDouble(cashCredit),
-                            phones = Formatters.toDouble(phones)
-                        )
-                        viewModel.saveBranchBudget(
-                            branchName = branch,
-                            period = period,
-                            workingDays = days.toIntOrNull() ?: 22,
-                            advisorCount = advisors.toIntOrNull() ?: 1,
-                            totalGoals = goals
-                        )
-                        Toast.makeText(context, "Presupuesto guardado", Toast.LENGTH_SHORT).show()
-                        onContinue()
+                        try {
+                            val goals = VariableSet(
+                                volume = Formatters.toDouble(volume).coerceAtLeast(0.0),
+                                credit = Formatters.toDouble(credit).coerceAtLeast(0.0),
+                                warranty = Formatters.toDouble(warranty).coerceAtLeast(0.0),
+                                cashCredit = Formatters.toDouble(cashCredit).coerceAtLeast(0.0),
+                                phones = Formatters.toDouble(phones).coerceAtLeast(0.0)
+                            )
+                            viewModel.saveBranchBudget(
+                                branchName = branch.trim(),
+                                period = period.trim(),
+                                workingDays = days.toIntOrNull() ?: 22,
+                                advisorCount = advisors.toIntOrNull() ?: 1,
+                                totalGoals = goals
+                            )
+                            Toast.makeText(context, "Presupuesto guardado", Toast.LENGTH_SHORT).show()
+                            onContinue()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Error al guardar: ${e.message}", Toast.LENGTH_LONG).show()
+                        } finally {
+                            isSaving = false
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp)
@@ -182,4 +210,11 @@ fun BudgetSetupScreen(
             }
         }
     }
+}
+
+/** Convierte un Double a string entero, manejando NaN/Infinity. */
+private fun safeLongString(value: Double): String {
+    if (!value.isFinite() || value <= 0.0) return ""
+    val capped = value.coerceAtMost(Long.MAX_VALUE.toDouble())
+    return capped.toLong().toString()
 }
