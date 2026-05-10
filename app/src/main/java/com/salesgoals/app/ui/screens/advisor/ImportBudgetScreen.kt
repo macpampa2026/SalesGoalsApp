@@ -129,8 +129,7 @@ fun ImportBudgetScreen(
             Toast.makeText(context, "Presupuesto importado desde el archivo recibido", Toast.LENGTH_SHORT).show()
             onSuccess()
         } catch (e: Exception) {
-                Toast.makeText(context, "No se pudo importar: ${e.message}", Toast.LENGTH_LONG).show()
-            }
+            Toast.makeText(context, "No se pudo importar: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
