@@ -1,6 +1,7 @@
 package com.salesgoals.app.ui.screens.advisor
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -121,6 +122,18 @@ fun AdvisorDashboardScreen(
             )
         }
     ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        listOf(
+                            com.salesgoals.app.ui.theme.GradientTop,
+                            com.salesgoals.app.ui.theme.GradientBottom
+                        )
+                    )
+                )
+        ) {
         if (!state.isLoaded) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
@@ -148,6 +161,7 @@ fun AdvisorDashboardScreen(
                 onOpenGrid = onOpenGrid
             )
         }
+        }  // end gradient Box
     }
 }
 

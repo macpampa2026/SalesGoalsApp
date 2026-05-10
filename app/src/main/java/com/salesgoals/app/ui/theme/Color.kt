@@ -14,6 +14,12 @@ val SecondaryContainer = Color(0xFFF3E5F5)
 val OnSecondaryContainer = Color(0xFF311B92)
 
 val Tertiary = Color(0xFF00ACC1)             // cian de acento
+val Accent = Color(0xFFFFD600)                // amarillo Frávega
+val AccentDark = Color(0xFFFFAB00)
+
+// Gradientes sutiles para fondos
+val GradientTop = Color(0xFFE3F2FD)           // azul muy claro
+val GradientBottom = Color(0xFFF5F8FC)        // casi blanco
 
 val Background = Color(0xFFF5F8FC)
 val Surface = Color(0xFFFFFFFF)

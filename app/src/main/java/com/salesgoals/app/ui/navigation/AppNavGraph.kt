@@ -15,6 +15,7 @@ import com.salesgoals.app.ui.screens.advisor.AdvisorViewModel
 import com.salesgoals.app.ui.screens.advisor.DailyEntryScreen
 import com.salesgoals.app.ui.screens.advisor.HistoryScreen
 import com.salesgoals.app.ui.screens.advisor.ImportBudgetScreen
+import com.salesgoals.app.ui.screens.advisor.ImportSuccessScreen
 import com.salesgoals.app.ui.screens.advisor.MonthlyGridScreen
 import com.salesgoals.app.ui.screens.common.DaysConfigScreen
 import com.salesgoals.app.ui.screens.manager.BudgetSetupScreen
@@ -31,6 +32,7 @@ object Routes {
     const val ADVISOR_IMPORT = "advisor/import"
     const val ADVISOR_DAYS = "advisor/days"
     const val ADVISOR_GRID = "advisor/grid"
+    const val ADVISOR_IMPORT_OK = "advisor/import_success"
 
     const val MANAGER_DASH = "manager/dashboard"
     const val MANAGER_SETUP = "manager/setup"
@@ -92,7 +94,21 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
         composable(Routes.ADVISOR_IMPORT) {
             ImportBudgetScreen(
                 onBack = { navController.popBackStack() },
-                onSuccess = { navController.popBackStack() }
+                onSuccess = {
+                    // Si vino de un archivo entrante, llevamos a la pantalla de éxito
+                    navController.navigate(Routes.ADVISOR_IMPORT_OK) {
+                        popUpTo(Routes.ADVISOR_IMPORT) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(Routes.ADVISOR_IMPORT_OK) {
+            ImportSuccessScreen(
+                onGoToDashboard = {
+                    navController.navigate(Routes.ADVISOR_DASH) {
+                        popUpTo(Routes.HOME)
+                    }
+                }
             )
         }
         composable(Routes.ADVISOR_DAYS) {
