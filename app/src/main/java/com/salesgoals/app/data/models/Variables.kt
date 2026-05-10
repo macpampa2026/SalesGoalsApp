@@ -24,7 +24,7 @@ data class VariableSet(
     )
 
     operator fun div(divisor: Int): VariableSet {
-        if (divisor <= 0) return this
+        if (divisor <= 0) return ZERO
         return VariableSet(
             volume = volume / divisor,
             credit = credit / divisor,
@@ -35,7 +35,7 @@ data class VariableSet(
     }
 
     operator fun div(divisor: Double): VariableSet {
-        if (divisor <= 0.0) return this
+        if (divisor <= 0.0 || !divisor.isFinite()) return ZERO
         return VariableSet(
             volume = volume / divisor,
             credit = credit / divisor,

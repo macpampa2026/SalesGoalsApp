@@ -40,8 +40,11 @@ data class AdvisorUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class AdvisorViewModel(
     application: Application,
-    val repository: SalesRepository
+    private val repository: SalesRepository
 ) : AndroidViewModel(application) {
+
+    /** Lee una entrada diaria desde Room. Para hidratar inputs en DailyEntryScreen. */
+    suspend fun getEntry(date: String): DailyEntryEntity? = repository.getEntry(date)
 
     val state: StateFlow<AdvisorUiState> = repository.observeAdvisorBudget()
         .flatMapLatest { budget ->

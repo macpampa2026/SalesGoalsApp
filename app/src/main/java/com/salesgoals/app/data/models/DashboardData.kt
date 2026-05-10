@@ -20,7 +20,10 @@ data class VariableProgress(
     val daysElapsed: Int,
 ) {
     val remaining: Double get() = (monthlyGoal - accumulated).coerceAtLeast(0.0)
-    val percent: Double get() = if (monthlyGoal > 0) (accumulated / monthlyGoal) * 100.0 else 0.0
+    val percent: Double get() = when {
+        monthlyGoal <= 0.0 -> 0.0
+        else -> ((accumulated / monthlyGoal) * 100.0).coerceIn(0.0, 9999.0)
+    }
 
     /** Objetivo diario base = total / días laborales */
     val dailyGoal: Double get() = if (workingDays > 0) monthlyGoal / workingDays else 0.0

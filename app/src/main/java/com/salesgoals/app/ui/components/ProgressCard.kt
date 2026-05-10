@@ -99,36 +99,44 @@ fun ProgressCard(progress: VariableProgress, modifier: Modifier = Modifier) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                MetricBlock("Restante", Formatters.formatValue(progress.remaining, isCurrency))
-                MetricBlock("% Cumplido", Formatters.percent(progress.percent))
-                MetricBlock("Diario nec.", Formatters.formatValue(progress.requiredPace, isCurrency))
+                MetricBlock("Restante", Formatters.formatValue(progress.remaining, isCurrency), Modifier.weight(1f))
+                MetricBlock("% Cumplido", Formatters.percent(progress.percent), Modifier.weight(1f))
+                MetricBlock("Diario nec.", Formatters.formatValue(progress.requiredPace, isCurrency), Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                MetricBlock("Diario base", Formatters.formatValue(progress.dailyGoal, isCurrency))
-                MetricBlock("Ritmo actual", Formatters.formatValue(progress.currentPace, isCurrency))
-                MetricBlock("Proyección", Formatters.formatValue(progress.projection, isCurrency))
+                MetricBlock("Diario base", Formatters.formatValue(progress.dailyGoal, isCurrency), Modifier.weight(1f))
+                MetricBlock("Ritmo actual", Formatters.formatValue(progress.currentPace, isCurrency), Modifier.weight(1f))
+                MetricBlock("Proyección", Formatters.formatValue(progress.projection, isCurrency), Modifier.weight(1f))
             }
         }
     }
 }
 
 @Composable
-private fun MetricBlock(label: String, value: String) {
-    Column {
+private fun MetricBlock(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
         Text(
             label,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
     }
 }
 

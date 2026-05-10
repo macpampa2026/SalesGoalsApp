@@ -104,7 +104,7 @@ fun HistoryScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(state.entries.reversed()) { entry ->
+                items(state.entries.reversed(), key = { it.date }) { entry ->
                     EntryRow(
                         entry = entry,
                         onEdit = { onEdit(entry.date) },

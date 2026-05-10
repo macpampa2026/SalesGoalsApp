@@ -34,6 +34,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -53,6 +56,7 @@ fun DistributionScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var isExporting by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -130,36 +134,49 @@ fun DistributionScreen(
 
             item { Text("Asesores", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 8.dp)) }
 
-            itemsIndexed(state.advisors) { index, name ->
+            itemsIndexed(state.advisors, key = { idx, _ -> idx }) { index, name ->
                 AdvisorRow(
                     index = index,
                     name = name,
+                    enabled = !isExporting,
                     onNameChange = { viewModel.updateAdvisorName(index, it) },
                     onShare = {
+                        if (isExporting) return@AdvisorRow
+                        isExporting = true
                         try {
-                            val payload = viewModel.buildPayloadFor(name)
+                            val payload = viewModel.buildPayloadFor(name.ifBlank { "Asesor ${index + 1}" })
                             val uri = ExportImportHelper.exportAdvisorPayload(context, payload, ExportFormat.JSON)
                             context.startActivity(Intent.createChooser(ExportImportHelper.shareIntent(uri), "Compartir presupuesto"))
                         } catch (e: Exception) {
                             Toast.makeText(context, "Error al exportar: ${e.message}", Toast.LENGTH_LONG).show()
+                        } finally {
+                            isExporting = false
                         }
                     },
                     onWhatsapp = {
+                        if (isExporting) return@AdvisorRow
+                        isExporting = true
                         try {
-                            val payload = viewModel.buildPayloadFor(name)
+                            val payload = viewModel.buildPayloadFor(name.ifBlank { "Asesor ${index + 1}" })
                             val uri = ExportImportHelper.exportAdvisorPayload(context, payload, ExportFormat.JSON)
                             context.startActivity(ExportImportHelper.whatsappIntent(uri))
                         } catch (e: Exception) {
                             Toast.makeText(context, "WhatsApp no disponible", Toast.LENGTH_LONG).show()
+                        } finally {
+                            isExporting = false
                         }
                     },
                     onEmail = {
+                        if (isExporting) return@AdvisorRow
+                        isExporting = true
                         try {
-                            val payload = viewModel.buildPayloadFor(name)
+                            val payload = viewModel.buildPayloadFor(name.ifBlank { "Asesor ${index + 1}" })
                             val uri = ExportImportHelper.exportAdvisorPayload(context, payload, ExportFormat.JSON)
                             context.startActivity(Intent.createChooser(ExportImportHelper.emailIntent(uri), "Enviar email"))
                         } catch (e: Exception) {
                             Toast.makeText(context, "Email no disponible", Toast.LENGTH_LONG).show()
+                        } finally {
+                            isExporting = false
                         }
                     }
                 )
@@ -198,6 +215,7 @@ private fun SummaryCard(
 private fun AdvisorRow(
     index: Int,
     name: String,
+    enabled: Boolean = true,
     onNameChange: (String) -> Unit,
     onShare: () -> Unit,
     onWhatsapp: () -> Unit,
@@ -211,20 +229,21 @@ private fun AdvisorRow(
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 value = name,
-                onValueChange = onNameChange,
+                onValueChange = { onNameChange(it.replace("\n", "")) },
                 label = { Text("Asesor #${index + 1}") },
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(onClick = onShare, modifier = Modifier.weight(1f)) {
+                FilledTonalButton(enabled = enabled, onClick = onShare, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.Share, contentDescription = null)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Compartir")
                 }
-                FilledTonalButton(onClick = onWhatsapp, modifier = Modifier.weight(1f)) {
+                FilledTonalButton(enabled = enabled, onClick = onWhatsapp, modifier = Modifier.weight(1f)) {
                     Text("WhatsApp")
                 }
-                FilledTonalButton(onClick = onEmail, modifier = Modifier.weight(1f)) {
+                FilledTonalButton(enabled = enabled, onClick = onEmail, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.Email, contentDescription = null)
                 }
             }

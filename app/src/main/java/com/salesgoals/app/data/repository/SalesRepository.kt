@@ -1,5 +1,7 @@
 package com.salesgoals.app.data.repository
 
+import androidx.room.withTransaction
+import com.salesgoals.app.data.database.AppDatabase
 import com.salesgoals.app.data.database.BudgetDao
 import com.salesgoals.app.data.database.DailyEntryDao
 import com.salesgoals.app.data.entities.BudgetEntity
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
  * Asesor (id=1) y Gerencia (id=2) tienen filas separadas.
  */
 class SalesRepository(
+    private val database: AppDatabase,
     private val budgetDao: BudgetDao,
     private val dailyEntryDao: DailyEntryDao
 ) {
@@ -45,10 +48,12 @@ class SalesRepository(
     suspend fun deleteEntry(date: String) = dailyEntryDao.deleteByDate(date)
     suspend fun clearEntries() = dailyEntryDao.clear()
 
-    /** Borra presupuesto del asesor + todas las cargas diarias. */
+    /** Borra presupuesto del asesor + todas las cargas diarias atómicamente. */
     suspend fun resetAdvisorAll() {
-        budgetDao.deleteById(1)
-        dailyEntryDao.clear()
+        database.withTransaction {
+            budgetDao.deleteById(1)
+            dailyEntryDao.clear()
+        }
     }
 
     /** Borra solo el presupuesto de la sucursal. */

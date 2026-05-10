@@ -41,10 +41,25 @@ data class ManagerUiState(
  */
 class ManagerViewModel(
     application: Application,
-    val repository: SalesRepository
+    private val repository: SalesRepository
 ) : AndroidViewModel(application) {
 
     private val advisorNames = MutableStateFlow<List<String>>(listOf("Asesor 1"))
+
+    init {
+        // Reacción separada al budget: ajusta el tamaño de advisorNames cuando
+        // cambia advisorCount. No mutamos desde dentro del combine para evitar
+        // race conditions entre downstream y upstream.
+        viewModelScope.launch {
+            repository.observeManagerBudget().collect { budget ->
+                val safeCount = (budget?.advisorCount ?: 1).coerceIn(1, 50)
+                val current = advisorNames.value
+                if (current.size != safeCount) {
+                    advisorNames.value = adjustList(current, safeCount)
+                }
+            }
+        }
+    }
 
     val state: StateFlow<ManagerUiState> = combine(
         repository.observeManagerBudget(),
@@ -56,10 +71,6 @@ class ManagerViewModel(
         val perAdvisor = totalGoals / advisorCount
         val perDay = if (workingDays > 0) perAdvisor / workingDays else perAdvisor
         val syncedNames = adjustList(names, advisorCount)
-        // Sincronizamos el StateFlow real solo si difiere, sin loop:
-        if (syncedNames.size != names.size) {
-            advisorNames.value = syncedNames
-        }
         ManagerUiState(
             budget = budget,
             branchName = budget?.branchName.orEmpty(),

@@ -33,7 +33,7 @@ fun VariableInput(
             },
             label = { Text(label ?: type.displayName) },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth(),
             supportingText = {
                 Text(if (type.isCurrency) "Monto en $ (sin símbolos)" else "Cantidad de unidades")

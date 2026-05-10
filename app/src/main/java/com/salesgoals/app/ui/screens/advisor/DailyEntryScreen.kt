@@ -69,7 +69,8 @@ fun DailyEntryScreen(
 
     var note by rememberSaveable { mutableStateOf("") }
     var hydratedDate by rememberSaveable { mutableStateOf("") }
-    var isSaving by rememberSaveable { mutableStateOf(false) }
+    // NO rememberSaveable: rotación durante save dejaría el flag atascado.
+    var isSaving by remember { mutableStateOf(false) }
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -77,7 +78,7 @@ fun DailyEntryScreen(
     LaunchedEffect(targetDate) {
         if (hydratedDate == targetDate) return@LaunchedEffect
         hydratedDate = targetDate
-        val existing = viewModel.repository.getEntry(targetDate)
+        val existing = viewModel.getEntry(targetDate)
         if (existing != null) {
             volume = safeLongString(existing.volume)
             credit = safeLongString(existing.credit)

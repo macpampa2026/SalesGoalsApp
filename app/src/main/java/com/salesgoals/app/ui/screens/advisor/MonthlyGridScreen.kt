@@ -143,7 +143,7 @@ fun MonthlyGridScreen(
                     modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 4.dp)
                 )
             }
-            items(cells) { cell ->
+            items(cells, key = { it.date }) { cell ->
                 DayRow(cell = cell, onClick = { onEditDay(cell.date) })
             }
         }

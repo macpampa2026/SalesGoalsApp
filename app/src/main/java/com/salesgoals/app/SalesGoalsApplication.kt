@@ -10,7 +10,7 @@ class SalesGoalsApplication : Application() {
 
     private val database by lazy { AppDatabase.get(this) }
     val repository by lazy {
-        SalesRepository(database.budgetDao(), database.dailyEntryDao())
+        SalesRepository(database, database.budgetDao(), database.dailyEntryDao())
     }
 
     override fun onCreate() {

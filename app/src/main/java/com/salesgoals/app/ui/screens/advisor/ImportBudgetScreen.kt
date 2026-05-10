@@ -71,7 +71,8 @@ fun ImportBudgetScreen(
     var phones by rememberSaveable { mutableStateOf("") }
 
     var lastHydratedSig by rememberSaveable { mutableStateOf("") }
-    var isSaving by rememberSaveable { mutableStateOf(false) }
+    // NO rememberSaveable: rotación durante save dejaría el flag atascado.
+    var isSaving by remember { mutableStateOf(false) }
     val budgetSignature = state.budget?.let { "${it.id}-${it.updatedAt}" } ?: "EMPTY"
     LaunchedEffect(state.isLoaded, budgetSignature) {
         if (!state.isLoaded) return@LaunchedEffect
@@ -115,17 +116,19 @@ fun ImportBudgetScreen(
         }
     }
 
-    // Si la app se abrió porque otro programa nos compartió un archivo (intent VIEW/SEND),
-    // consumimos la URI pendiente y la importamos automáticamente.
-    LaunchedEffect(Unit) {
-        val pending = PendingImport.consume()
-        if (pending != null) {
-            try {
-                val payload = ExportImportHelper.importPayload(context, pending)
-                viewModel.applyImportedPayload(payload)
-                Toast.makeText(context, "Presupuesto importado desde el archivo recibido", Toast.LENGTH_SHORT).show()
-                onSuccess()
-            } catch (e: Exception) {
+    // Observamos el URI pendiente continuamente. Si llega una nueva URI mientras
+    // ya estamos en esta pantalla, también se importa.
+    val pendingUriObserved by PendingImport.uri.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingUriObserved) {
+        val pending = pendingUriObserved ?: return@LaunchedEffect
+        // Consumimos atómicamente para que la nav no re-dispare.
+        PendingImport.consume()
+        try {
+            val payload = ExportImportHelper.importPayload(context, pending)
+            viewModel.applyImportedPayload(payload)
+            Toast.makeText(context, "Presupuesto importado desde el archivo recibido", Toast.LENGTH_SHORT).show()
+            onSuccess()
+        } catch (e: Exception) {
                 Toast.makeText(context, "No se pudo importar: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }

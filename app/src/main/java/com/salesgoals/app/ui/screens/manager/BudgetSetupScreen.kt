@@ -70,7 +70,8 @@ fun BudgetSetupScreen(
     // (o cuando se hace reset). No pisamos los inputs del usuario si Room emite
     // mientras está tipeando.
     var lastHydratedSig by rememberSaveable { mutableStateOf("") }
-    var isSaving by rememberSaveable { mutableStateOf(false) }
+    // NO rememberSaveable: rotación durante save dejaría el flag atascado.
+    var isSaving by remember { mutableStateOf(false) }
     val budgetSignature = state.budget?.let { "${it.id}-${it.updatedAt}" } ?: "EMPTY"
     LaunchedEffect(state.isLoaded, budgetSignature) {
         if (!state.isLoaded) return@LaunchedEffect

@@ -120,10 +120,12 @@ object Formatters {
      * devuelve el día del mes capeado por workingDays.
      */
     fun elapsedWorkingDays(workingDays: Int, period: String? = null, today: Date = Date()): Int {
+        if (workingDays <= 0) return 0
         val cal = Calendar.getInstance().apply { time = today }
         val currYear = cal.get(Calendar.YEAR)
         val currMonth = cal.get(Calendar.MONTH) + 1
         val currDay = cal.get(Calendar.DAY_OF_MONTH)
+        val totalDaysCurrentMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
         if (period != null) {
             val parts = period.split("-")
             if (parts.size >= 2) {
@@ -132,11 +134,16 @@ object Formatters {
                 if (py != null && pm != null) {
                     val periodKey = py * 100 + pm
                     val currKey = currYear * 100 + currMonth
-                    if (periodKey < currKey) return workingDays  // periodo pasado
-                    if (periodKey > currKey) return 0            // periodo futuro
+                    if (periodKey < currKey) return workingDays
+                    if (periodKey > currKey) return 0
                 }
             }
         }
-        return currDay.coerceIn(0, workingDays)
+        // Pro-rateo: fracción del mes transcurrido aplicada a workingDays.
+        // Antes devolvía currDay capeado a workingDays — congelaba la UI
+        // del día 22 al 31 del mes (en meses con 22 días laborales).
+        val ratio = currDay.toDouble() / totalDaysCurrentMonth.toDouble()
+        val elapsed = (ratio * workingDays).toInt().coerceAtLeast(1)
+        return elapsed.coerceAtMost(workingDays)
     }
 }
