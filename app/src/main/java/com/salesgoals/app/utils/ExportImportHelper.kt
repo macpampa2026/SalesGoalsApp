@@ -61,6 +61,53 @@ object ExportImportHelper {
         }
     }
 
+    /**
+     * Tipo del archivo importado. Distingue entre presupuesto enviado por la
+     * Gerencia (BUDGET) y un respaldo completo del Asesor (FULL_BACKUP).
+     */
+    sealed class ImportedFile {
+        data class Budget(val payload: AdvisorBudgetPayload) : ImportedFile()
+        data class FullBackup(val payload: com.salesgoals.app.data.models.FullBackupPayload) : ImportedFile()
+    }
+
+    /** Detecta automáticamente si el archivo es un budget o un full backup. */
+    fun importAny(context: Context, uri: Uri): ImportedFile {
+        val text = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+            ?: throw IllegalArgumentException("No se pudo leer el archivo")
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) throw IllegalArgumentException("Archivo vacío")
+        // Si parece JSON, lo intentamos como backup primero (tiene "isFullBackup").
+        if (trimmed.startsWith("{")) {
+            // Detectamos por contenido sin parsear todo el JSON dos veces.
+            if (trimmed.contains("\"isFullBackup\"") && trimmed.contains("true")) {
+                return ImportedFile.FullBackup(json.decodeFromString(trimmed))
+            }
+            return ImportedFile.Budget(json.decodeFromString(trimmed))
+        }
+        return ImportedFile.Budget(csvToPayload(trimmed))
+    }
+
+    /** Exporta un respaldo completo del Asesor a un archivo en cache. */
+    fun exportFullBackup(
+        context: Context,
+        payload: com.salesgoals.app.data.models.FullBackupPayload
+    ): Uri {
+        val nameSlug = payload.budget?.advisorName?.let { sanitize(it) } ?: "asesor"
+        val period = payload.budget?.period ?: java.text.SimpleDateFormat("yyyy-MM", java.util.Locale.US).format(java.util.Date())
+        val baseName = "respaldo_completo_${nameSlug}_${period}"
+        val dir = File(context.cacheDir, "exports").apply { if (!exists()) mkdirs() }
+        val cutoff = System.currentTimeMillis() - 24L * 60 * 60 * 1000
+        dir.listFiles()?.forEach { f -> if (f.lastModified() < cutoff) f.delete() }
+        val file = File(dir, "$baseName.json").apply {
+            writeText(json.encodeToString(payload))
+        }
+        return FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+    }
+
     /** Intent genérico para "Compartir vía…" — wrapeá con Intent.createChooser en la UI. */
     fun shareIntent(
         uri: Uri,

@@ -12,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import com.salesgoals.app.ui.screens.HomeScreen
 import com.salesgoals.app.ui.screens.advisor.AdvisorDashboardScreen
 import com.salesgoals.app.ui.screens.advisor.AdvisorViewModel
+import com.salesgoals.app.ui.screens.advisor.BackupScreen
 import com.salesgoals.app.ui.screens.advisor.DailyEntryScreen
 import com.salesgoals.app.ui.screens.advisor.HistoryScreen
 import com.salesgoals.app.ui.screens.advisor.ImportBudgetScreen
@@ -33,6 +34,7 @@ object Routes {
     const val ADVISOR_DAYS = "advisor/days"
     const val ADVISOR_GRID = "advisor/grid"
     const val ADVISOR_IMPORT_OK = "advisor/import_success"
+    const val ADVISOR_BACKUP = "advisor/backup"
 
     const val MANAGER_DASH = "manager/dashboard"
     const val MANAGER_SETUP = "manager/setup"
@@ -69,8 +71,12 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
                 onOpenImport = { navController.navigate(Routes.ADVISOR_IMPORT) },
                 onOpenDaysConfig = { navController.navigate(Routes.ADVISOR_DAYS) },
                 onOpenGrid = { navController.navigate(Routes.ADVISOR_GRID) },
+                onOpenBackup = { navController.navigate(Routes.ADVISOR_BACKUP) },
                 onBack = { navController.popBackStack() }
             )
+        }
+        composable(Routes.ADVISOR_BACKUP) {
+            BackupScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.ADVISOR_GRID) {
             MonthlyGridScreen(

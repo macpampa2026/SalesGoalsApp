@@ -108,6 +108,15 @@ class AdvisorViewModel(
         repository.applyImportedBudget(payload)
     }
 
+    /** Construye el backup completo (presupuesto + cargas) para exportar. */
+    suspend fun buildFullBackup(): com.salesgoals.app.data.models.FullBackupPayload =
+        repository.buildFullBackup()
+
+    /** Restaura un backup completo: sobrescribe el presupuesto y las cargas diarias. */
+    suspend fun restoreFullBackup(payload: com.salesgoals.app.data.models.FullBackupPayload) {
+        repository.restoreFullBackup(payload)
+    }
+
     /** Borra todo: presupuesto del asesor + cargas diarias. */
     suspend fun resetAll() {
         repository.resetAdvisorAll()

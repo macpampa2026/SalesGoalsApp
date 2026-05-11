@@ -78,6 +78,59 @@ class SalesRepository(
             )
         )
     }
+
+    /** Construye un backup completo: presupuesto del asesor + todas las cargas diarias. */
+    suspend fun buildFullBackup(): com.salesgoals.app.data.models.FullBackupPayload {
+        val budget = getAdvisorBudget()
+        val period = budget?.period?.ifBlank { com.salesgoals.app.utils.Formatters.currentPeriod() }
+            ?: com.salesgoals.app.utils.Formatters.currentPeriod()
+        val entries = getEntries(period)
+        val budgetPayload = budget?.let {
+            com.salesgoals.app.data.models.AdvisorBudgetPayload(
+                advisorName = it.ownerName,
+                branchName = it.branchName,
+                period = it.period,
+                workingDays = it.workingDays,
+                goals = it.toGoals()
+            )
+        }
+        return com.salesgoals.app.data.models.FullBackupPayload(
+            budget = budgetPayload,
+            entries = entries.map { e ->
+                com.salesgoals.app.data.models.SerializableDailyEntry(
+                    date = e.date,
+                    volume = e.volume, credit = e.credit, warranty = e.warranty,
+                    cashCredit = e.cashCredit, phones = e.phones,
+                    targetVolume = e.targetVolume, targetCredit = e.targetCredit,
+                    targetWarranty = e.targetWarranty, targetCashCredit = e.targetCashCredit,
+                    targetPhones = e.targetPhones,
+                    note = e.note
+                )
+            }
+        )
+    }
+
+    /** Restaura un backup completo atómicamente. */
+    suspend fun restoreFullBackup(payload: com.salesgoals.app.data.models.FullBackupPayload) {
+        database.withTransaction {
+            payload.budget?.let { applyImportedBudget(it) }
+            // Reemplazamos las entries existentes con las del backup.
+            dailyEntryDao.clear()
+            payload.entries.forEach { e ->
+                dailyEntryDao.upsert(
+                    DailyEntryEntity(
+                        date = e.date,
+                        volume = e.volume, credit = e.credit, warranty = e.warranty,
+                        cashCredit = e.cashCredit, phones = e.phones,
+                        targetVolume = e.targetVolume, targetCredit = e.targetCredit,
+                        targetWarranty = e.targetWarranty, targetCashCredit = e.targetCashCredit,
+                        targetPhones = e.targetPhones,
+                        note = e.note
+                    )
+                )
+            }
+        }
+    }
 }
 
 fun BudgetEntity.toGoals(): VariableSet = VariableSet(

@@ -11,10 +11,10 @@ android {
 
     defaultConfig {
         applicationId = "com.salesgoals.app"
-        minSdk = 24      // Compatible con Android 7.0+
-        targetSdk = 35   // Compatible con Android 15/16
-        versionCode = 1
-        versionName = "1.0.0"
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -22,9 +22,23 @@ android {
         }
     }
 
+    signingConfigs {
+        create("appKey") {
+            storeFile = file("keystore/release.keystore")
+            storePassword = "REDACTED"
+            keyAlias = "REDACTED"
+            keyPassword = "REDACTED"
+            // Habilitamos firma v2/v3 explícitamente para máxima compatibilidad
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("appKey")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -32,6 +46,10 @@ android {
         }
         debug {
             isMinifyEnabled = false
+            // Usamos la misma llave en debug que en release para que un APK
+            // generado por GitHub Actions pueda instalarse como actualización
+            // sobre cualquier APK previo de este proyecto.
+            signingConfig = signingConfigs.getByName("appKey")
         }
     }
 
