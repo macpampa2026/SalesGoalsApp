@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.RestartAlt
@@ -111,7 +112,7 @@ fun AdvisorDashboardScreen(
                 },
                 actions = {
                     IconButton(onClick = onOpenBackup) {
-                        Icon(androidx.compose.material.icons.Icons.Default.CloudUpload, contentDescription = "Respaldo de datos")
+                        Icon(Icons.Default.CloudUpload, contentDescription = "Respaldo de datos")
                     }
                     IconButton(onClick = { showResetDialog = true }) {
                         Icon(Icons.Default.RestartAlt, contentDescription = "Reiniciar / Cargar de nuevo")
