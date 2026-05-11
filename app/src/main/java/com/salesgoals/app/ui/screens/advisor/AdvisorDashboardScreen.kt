@@ -111,7 +111,7 @@ fun AdvisorDashboardScreen(
                 },
                 actions = {
                     IconButton(onClick = onOpenBackup) {
-                        Icon(androidx.compose.material.icons.Icons.Default.Backup, contentDescription = "Respaldo de datos")
+                        Icon(androidx.compose.material.icons.Icons.Default.CloudUpload, contentDescription = "Respaldo de datos")
                     }
                     IconButton(onClick = { showResetDialog = true }) {
                         Icon(Icons.Default.RestartAlt, contentDescription = "Reiniciar / Cargar de nuevo")
