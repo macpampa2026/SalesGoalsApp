@@ -85,6 +85,8 @@ fun ProgressCard(progress: VariableProgress, modifier: Modifier = Modifier) {
                 Text(
                     progress.type.displayName,
                     style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
                 StatusChip(progress.status, color, bg)

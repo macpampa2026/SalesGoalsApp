@@ -67,6 +67,16 @@ fun ImportSuccessScreen(
                 .padding(padding)
                 .background(Brush.verticalGradient(listOf(GradientTop, GradientBottom)))
         ) {
+            // Muestra spinner mientras el VM termina de leer Room tras el save.
+            if (!state.isLoaded || budget == null) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator()
+                }
+                return@Box
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(20.dp),
@@ -97,17 +107,17 @@ fun ImportSuccessScreen(
                 }
                 item {
                     Text(
-                        "¡Presupuesto recibido!",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        "¡Listo!",
+                        style = MaterialTheme.typography.displayLarge,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                     Text(
-                        "Se incorporó a tu back office. Estos son los datos:",
+                        "Tu presupuesto se incorporó a tu back office. Estos son los datos cargados:",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
