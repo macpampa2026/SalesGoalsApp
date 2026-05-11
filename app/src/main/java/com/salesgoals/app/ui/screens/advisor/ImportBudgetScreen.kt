@@ -100,38 +100,48 @@ fun ImportBudgetScreen(
         lastHydratedSig = budgetSignature
     }
 
-    val pickFile = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            scope.launch {
-                try {
-                    val payload = ExportImportHelper.importPayload(context, uri)
-                    viewModel.applyImportedPayload(payload)
-                    Toast.makeText(context, "Presupuesto importado correctamente", Toast.LENGTH_SHORT).show()
-                    onSuccess()
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Error al leer el archivo: ${e.message}", Toast.LENGTH_LONG).show()
+    // Helper: detecta backup vs budget normal y aplica el correcto.
+    suspend fun handleImportedUri(uri: android.net.Uri, isFromExternalShare: Boolean) {
+        try {
+            when (val imported = ExportImportHelper.importAny(context, uri)) {
+                is ExportImportHelper.ImportedFile.FullBackup -> {
+                    viewModel.restoreFullBackup(imported.payload)
+                    Toast.makeText(
+                        context,
+                        if (isFromExternalShare) "Respaldo restaurado desde el archivo recibido"
+                        else "Respaldo restaurado",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                is ExportImportHelper.ImportedFile.Budget -> {
+                    viewModel.applyImportedPayload(imported.payload)
+                    Toast.makeText(
+                        context,
+                        if (isFromExternalShare) "Presupuesto importado desde el archivo recibido"
+                        else "Presupuesto importado correctamente",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
-        }
-    }
-
-    // Observamos el URI pendiente continuamente. Si llega una nueva URI mientras
-    // ya estamos en esta pantalla, también se importa.
-    val pendingUriObserved by PendingImport.uri.collectAsStateWithLifecycle()
-    LaunchedEffect(pendingUriObserved) {
-        val pending = pendingUriObserved ?: return@LaunchedEffect
-        // Consumimos atómicamente para que la nav no re-dispare.
-        PendingImport.consume()
-        try {
-            val payload = ExportImportHelper.importPayload(context, pending)
-            viewModel.applyImportedPayload(payload)
-            Toast.makeText(context, "Presupuesto importado desde el archivo recibido", Toast.LENGTH_SHORT).show()
             onSuccess()
         } catch (e: Exception) {
             Toast.makeText(context, "No se pudo importar: ${e.message}", Toast.LENGTH_LONG).show()
         }
+    }
+
+    val pickFile = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) scope.launch { handleImportedUri(uri, isFromExternalShare = false) }
+    }
+
+    // Observamos el URI pendiente. Si llega una URI mientras estamos en esta
+    // pantalla, también la procesamos.
+    val pendingUriObserved by PendingImport.uri.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingUriObserved) {
+        val pending = pendingUriObserved ?: return@LaunchedEffect
+        PendingImport.consume()
+        handleImportedUri(pending, isFromExternalShare = true)
     }
 
     Scaffold(
