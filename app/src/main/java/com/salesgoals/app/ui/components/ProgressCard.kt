@@ -1,6 +1,7 @@
 package com.salesgoals.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,13 +55,20 @@ private fun statusLabel(status: PerformanceStatus): String = when (status) {
 }
 
 @Composable
-fun ProgressCard(progress: VariableProgress, modifier: Modifier = Modifier) {
+fun ProgressCard(
+    progress: VariableProgress,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
     val isCurrency = progress.type.isCurrency
     val color = statusColor(progress.status)
     val bg = statusBg(progress.status)
 
+    val baseModifier = modifier.fillMaxWidth()
+    val finalModifier = if (onClick != null) baseModifier.clickable(onClick = onClick) else baseModifier
+
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = finalModifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

@@ -63,12 +63,15 @@ class SalesRepository(
 
     /** Aplica un payload importado por el asesor. */
     suspend fun applyImportedBudget(payload: AdvisorBudgetPayload) {
+        // Saneamos espacios y validamos formato YYYY-MM, así no se rompe la query
+        // `substr(date, 1, 7) = :period` si llega "2026-05 " con espacio extra.
+        val cleanPeriod = com.salesgoals.app.utils.Formatters.safePeriod(payload.period.trim())
         saveAdvisorBudget(
             BudgetEntity(
-                ownerName = payload.advisorName,
-                branchName = payload.branchName,
-                period = payload.period,
-                workingDays = payload.workingDays,
+                ownerName = payload.advisorName.trim(),
+                branchName = payload.branchName.trim(),
+                period = cleanPeriod,
+                workingDays = payload.workingDays.coerceIn(1, 31),
                 advisorCount = 1,
                 goalVolume = payload.goals.volume,
                 goalCredit = payload.goals.credit,

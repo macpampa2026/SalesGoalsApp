@@ -74,6 +74,53 @@ fun AdvisorDashboardScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
+    var quickAddTarget by remember { mutableStateOf<com.salesgoals.app.data.models.VariableType?>(null) }
+    var quickAddInput by remember { mutableStateOf("") }
+
+    // Diálogo de "Sumar al objetivo"
+    quickAddTarget?.let { type ->
+        AlertDialog(
+            onDismissRequest = { quickAddTarget = null; quickAddInput = "" },
+            title = { Text("Sumar a ${type.displayName}") },
+            text = {
+                androidx.compose.foundation.layout.Column {
+                    Text(
+                        "El monto que ingreses se sumará al acumulado de HOY (${Formatters.friendlyDate(Formatters.today())}).",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    com.salesgoals.app.ui.components.VariableInput(
+                        type = type,
+                        value = quickAddInput,
+                        label = if (type.isCurrency) "Monto de la venta" else "Cantidad"
+                    ) { quickAddInput = it }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val amount = Formatters.toDouble(quickAddInput).coerceAtLeast(0.0)
+                    val tipo = type
+                    quickAddTarget = null
+                    quickAddInput = ""
+                    if (amount > 0.0) {
+                        scope.launch {
+                            val ok = viewModel.quickAddToVariable(tipo, amount)
+                            val msg = if (ok) "Sumado a ${tipo.displayName}: ${Formatters.formatValue(amount, tipo.isCurrency)}"
+                                      else "HOY está fuera del período del presupuesto — actualizá el presupuesto antes de cargar"
+                            Toast.makeText(context, msg, if (ok) Toast.LENGTH_SHORT else Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) {
+                    Text("Sumar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { quickAddTarget = null; quickAddInput = "" }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     if (showResetDialog) {
         AlertDialog(
@@ -163,7 +210,11 @@ fun AdvisorDashboardScreen(
                 onOpenHistory = onOpenHistory,
                 onOpenImport = onOpenImport,
                 onOpenDaysConfig = onOpenDaysConfig,
-                onOpenGrid = onOpenGrid
+                onOpenGrid = onOpenGrid,
+                onQuickAdd = { type ->
+                    quickAddTarget = type
+                    quickAddInput = ""
+                }
             )
         }
         }  // end gradient Box
@@ -178,7 +229,8 @@ private fun DashboardContent(
     onOpenHistory: () -> Unit,
     onOpenImport: () -> Unit,
     onOpenDaysConfig: () -> Unit,
-    onOpenGrid: () -> Unit
+    onOpenGrid: () -> Unit,
+    onQuickAdd: (com.salesgoals.app.data.models.VariableType) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -258,8 +310,20 @@ private fun DashboardContent(
                 }
             }
         }
-        items(state.progressByVariable) { progress ->
-            ProgressCard(progress = progress)
+        item {
+            // Hint sutil de la nueva funcionalidad de quick-add
+            Text(
+                "Tocá una tarjeta para sumar una venta al instante",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+            )
+        }
+        items(state.progressByVariable, key = { it.type.name }) { progress ->
+            ProgressCard(
+                progress = progress,
+                onClick = { onQuickAdd(progress.type) }
+            )
         }
     }
 }

@@ -2,15 +2,18 @@ package com.salesgoals.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
@@ -26,70 +29,114 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.salesgoals.app.ui.theme.Accent
 import com.salesgoals.app.ui.theme.GradientBottom
 import com.salesgoals.app.ui.theme.GradientTop
+import com.salesgoals.app.ui.theme.OnPrimaryContainer
 
 @Composable
 fun HomeScreen(
     onPickAdvisor: () -> Unit,
     onPickManager: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(GradientTop, GradientBottom)))
-    ) {
+    val dark = isSystemInDarkTheme()
+    val bgBrush = if (dark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.background,
+                MaterialTheme.colorScheme.surface
+            )
+        )
+    } else {
+        Brush.verticalGradient(listOf(GradientTop, GradientBottom))
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(bgBrush)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            // Acento amarillo arriba a la izquierda
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Accent),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "152",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF003366)
-                )
+            // Marca: badge "152" + nombre
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Accent),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "152",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp
+                        ),
+                        color = OnPrimaryContainer
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        "Frávega",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        "Carrera 152",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Spacer(modifier = Modifier.height(20.dp))
+
             Text(
-                "Objetivos en carrera",
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.primary
+                "Objetivos de ventas",
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
-                "Seleccioná tu modo de uso",
+                "Elegí tu modo de uso",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
             )
-            Spacer(modifier = Modifier.height(28.dp))
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             ModeCard(
                 title = "Asesor",
-                subtitle = "Vendedor: cargá resultados, seguí tu progreso",
+                subtitle = "Cargá tus ventas y seguí tu progreso al instante",
                 icon = Icons.Default.Person,
-                color = MaterialTheme.colorScheme.primary,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 onClick = onPickAdvisor
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             ModeCard(
                 title = "Gerencia",
-                subtitle = "Cargá el presupuesto de la sucursal y distribuilo",
+                subtitle = "Distribuí presupuestos y supervisá objetivos",
                 icon = Icons.Default.Business,
-                color = MaterialTheme.colorScheme.secondary,
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
                 onClick = onPickManager
             )
         }
@@ -101,37 +148,55 @@ private fun ModeCard(
     title: String,
     subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color,
+    containerColor: Color,
+    contentColor: Color,
     onClick: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = color),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(132.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .height(140.dp)
+            .clip(RoundedCornerShape(22.dp))
             .clickable { onClick() }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.Center
+        Row(
+            modifier = Modifier.fillMaxSize().padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.2f)),
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(contentColor.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = Color.White)
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(30.dp)
+                )
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(title, style = MaterialTheme.typography.headlineMedium, color = Color.White)
-            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.9f))
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = contentColor.copy(alpha = 0.9f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

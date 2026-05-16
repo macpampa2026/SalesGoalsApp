@@ -20,6 +20,7 @@ import com.salesgoals.app.utils.Formatters
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -47,8 +48,14 @@ class AdvisorViewModel(
     suspend fun getEntry(date: String): DailyEntryEntity? = repository.getEntry(date)
 
     val state: StateFlow<AdvisorUiState> = repository.observeAdvisorBudget()
-        .flatMapLatest { budget ->
-            val period = budget?.period?.ifBlank { Formatters.currentPeriod() } ?: Formatters.currentPeriod()
+        // Solo re-suscribir a observeEntries cuando cambia el budget en algo
+        // significativo (no en cada updatedAt menor). Evita parpadeos.
+        .map { budget ->
+            val period = budget?.period?.let { Formatters.safePeriod(it) } ?: Formatters.currentPeriod()
+            budget to period
+        }
+        .distinctUntilChanged()
+        .flatMapLatest { (budget, period) ->
             repository.observeEntries(period).map { entries -> budget to entries }
         }
         .map { (budget, entries) -> buildUiState(budget, entries) }
@@ -59,7 +66,7 @@ class AdvisorViewModel(
         entries: List<DailyEntryEntity>
     ): AdvisorUiState {
         val workingDays = (budget?.workingDays ?: 22).coerceIn(1, 31)
-        val period = budget?.period?.ifBlank { Formatters.currentPeriod() } ?: Formatters.currentPeriod()
+        val period = budget?.period?.let { Formatters.safePeriod(it) } ?: Formatters.currentPeriod()
         val daysElapsed = Formatters.elapsedWorkingDays(workingDays, period).coerceAtLeast(1)
         val accumulated = entries.fold(VariableSet.ZERO) { acc, e -> acc + e.toSet() }
         val goals = budget?.toGoals() ?: VariableSet.ZERO
@@ -120,6 +127,46 @@ class AdvisorViewModel(
     /** Borra todo: presupuesto del asesor + cargas diarias. */
     suspend fun resetAll() {
         repository.resetAdvisorAll()
+    }
+
+    /**
+     * Suma incremental al objetivo: lee la carga de HOY (si existe), suma el monto
+     * a la variable indicada y guarda. Permite ir actualizando en vivo sin abrir
+     * el formulario completo.
+     *
+     * Devuelve `true` si se aplicó, `false` si HOY no pertenece al período del
+     * presupuesto (la UI debe avisarle al usuario y no escribir).
+     */
+    suspend fun quickAddToVariable(type: VariableType, amount: Double): Boolean {
+        if (amount <= 0.0 || !amount.isFinite()) return false
+        val budget = repository.getAdvisorBudget()
+        val budgetPeriod = budget?.period?.let { Formatters.safePeriod(it) }
+            ?: Formatters.currentPeriod()
+        val today = Formatters.today()
+        if (today.substring(0, 7) != budgetPeriod) {
+            return false
+        }
+        val existing = repository.getEntry(today)
+        val newEntry = if (existing != null) {
+            when (type) {
+                VariableType.VOLUME -> existing.copy(volume = existing.volume + amount)
+                VariableType.CREDIT -> existing.copy(credit = existing.credit + amount)
+                VariableType.WARRANTY -> existing.copy(warranty = existing.warranty + amount)
+                VariableType.CASH_CREDIT -> existing.copy(cashCredit = existing.cashCredit + amount)
+                VariableType.PHONES -> existing.copy(phones = existing.phones + amount)
+            }.copy(updatedAt = System.currentTimeMillis())
+        } else {
+            DailyEntryEntity(
+                date = today,
+                volume = if (type == VariableType.VOLUME) amount else 0.0,
+                credit = if (type == VariableType.CREDIT) amount else 0.0,
+                warranty = if (type == VariableType.WARRANTY) amount else 0.0,
+                cashCredit = if (type == VariableType.CASH_CREDIT) amount else 0.0,
+                phones = if (type == VariableType.PHONES) amount else 0.0
+            )
+        }
+        repository.saveEntry(newEntry)
+        return true
     }
 
     suspend fun saveManualBudget(
