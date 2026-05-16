@@ -159,33 +159,48 @@ private fun SummaryCard(totalTarget: VariableSet, totalSales: VariableSet) {
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 "Resumen acumulado del mes",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimary
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             VariableType.values().forEach { v ->
                 val target = v.valueOf(totalTarget)
                 val sales = v.valueOf(totalSales)
                 val pct = if (target > 0) (sales / target * 100.0) else 0.0
-                Row(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         v.displayName,
-                        modifier = Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        modifier = Modifier.weight(0.35f),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                     Text(
                         "${Formatters.formatValue(sales, v.isCurrency)} / ${Formatters.formatValue(target, v.isCurrency)}",
+                        modifier = Modifier.weight(0.5f),
                         color = MaterialTheme.colorScheme.onPrimary,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         Formatters.percent(pct),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        modifier = Modifier.weight(0.15f),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                        maxLines = 1
                     )
                 }
             }

@@ -59,6 +59,7 @@ fun ManagerDashboardScreen(
     onBack: () -> Unit,
     onOpenSetup: () -> Unit,
     onOpenDistribution: () -> Unit,
+    onOpenTeam: () -> Unit,
     viewModel: ManagerViewModel = viewModel(factory = ManagerViewModel.Factory)
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -184,6 +185,20 @@ fun ManagerDashboardScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Distribuir")
                         }
+                    }
+                }
+                item {
+                    Button(
+                        onClick = onOpenTeam,
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary
+                        )
+                    ) {
+                        Icon(androidx.compose.material.icons.Icons.Default.Group, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Vista de equipo (preview multi-usuario)")
                     }
                 }
                 item {

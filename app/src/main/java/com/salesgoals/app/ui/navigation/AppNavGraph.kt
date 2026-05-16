@@ -22,6 +22,7 @@ import com.salesgoals.app.ui.screens.common.DaysConfigScreen
 import com.salesgoals.app.ui.screens.manager.BudgetSetupScreen
 import com.salesgoals.app.ui.screens.manager.DistributionScreen
 import com.salesgoals.app.ui.screens.manager.ManagerDashboardScreen
+import com.salesgoals.app.ui.screens.manager.TeamPreviewScreen
 import com.salesgoals.app.utils.PendingImport
 
 object Routes {
@@ -38,6 +39,7 @@ object Routes {
 
     const val MANAGER_DASH = "manager/dashboard"
     const val MANAGER_SETUP = "manager/setup"
+    const val MANAGER_TEAM = "manager/team"
     const val MANAGER_DIST = "manager/distribution"
 }
 
@@ -135,8 +137,12 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
             ManagerDashboardScreen(
                 onBack = { navController.popBackStack() },
                 onOpenSetup = { navController.navigate(Routes.MANAGER_SETUP) },
-                onOpenDistribution = { navController.navigate(Routes.MANAGER_DIST) }
+                onOpenDistribution = { navController.navigate(Routes.MANAGER_DIST) },
+                onOpenTeam = { navController.navigate(Routes.MANAGER_TEAM) }
             )
+        }
+        composable(Routes.MANAGER_TEAM) {
+            TeamPreviewScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.MANAGER_SETUP) {
             BudgetSetupScreen(
