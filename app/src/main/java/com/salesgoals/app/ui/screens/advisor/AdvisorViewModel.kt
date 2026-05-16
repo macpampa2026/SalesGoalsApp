@@ -147,13 +147,18 @@ class AdvisorViewModel(
             return false
         }
         val existing = repository.getEntry(today)
+        // Helper para sumar resguardando contra NaN/Infinity tras la suma.
+        fun safeAdd(a: Double, b: Double): Double {
+            val r = a + b
+            return if (r.isFinite()) r else a
+        }
         val newEntry = if (existing != null) {
             when (type) {
-                VariableType.VOLUME -> existing.copy(volume = existing.volume + amount)
-                VariableType.CREDIT -> existing.copy(credit = existing.credit + amount)
-                VariableType.WARRANTY -> existing.copy(warranty = existing.warranty + amount)
-                VariableType.CASH_CREDIT -> existing.copy(cashCredit = existing.cashCredit + amount)
-                VariableType.PHONES -> existing.copy(phones = existing.phones + amount)
+                VariableType.VOLUME -> existing.copy(volume = safeAdd(existing.volume, amount))
+                VariableType.CREDIT -> existing.copy(credit = safeAdd(existing.credit, amount))
+                VariableType.WARRANTY -> existing.copy(warranty = safeAdd(existing.warranty, amount))
+                VariableType.CASH_CREDIT -> existing.copy(cashCredit = safeAdd(existing.cashCredit, amount))
+                VariableType.PHONES -> existing.copy(phones = safeAdd(existing.phones, amount))
             }.copy(updatedAt = System.currentTimeMillis())
         } else {
             DailyEntryEntity(

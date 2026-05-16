@@ -83,7 +83,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
-                        "Frávega",
+                        "Sucursal",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         fontWeight = FontWeight.Medium
@@ -140,6 +140,18 @@ fun HomeScreen(
                 onClick = onPickManager
             )
         }
+
+        // Crédito del desarrollador anclado al pie, discreto
+        Text(
+            text = "v1.1.0 · desarrollado por Mario Cabral",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.45f),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }
 

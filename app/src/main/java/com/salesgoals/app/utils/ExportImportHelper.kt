@@ -78,8 +78,9 @@ object ExportImportHelper {
         if (trimmed.isEmpty()) throw IllegalArgumentException("Archivo vacío")
         // Si parece JSON, lo intentamos como backup primero (tiene "isFullBackup").
         if (trimmed.startsWith("{")) {
-            // Detectamos por contenido sin parsear todo el JSON dos veces.
-            if (trimmed.contains("\"isFullBackup\"") && trimmed.contains("true")) {
+            // Regex precisa para no confundir si "isFullBackup" aparece en notas.
+            val backupPattern = Regex("\"isFullBackup\"\\s*:\\s*true")
+            if (backupPattern.containsMatchIn(trimmed)) {
                 return ImportedFile.FullBackup(json.decodeFromString(trimmed))
             }
             return ImportedFile.Budget(json.decodeFromString(trimmed))

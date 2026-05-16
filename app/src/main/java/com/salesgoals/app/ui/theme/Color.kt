@@ -2,8 +2,8 @@ package com.salesgoals.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Paleta inspirada en Frávega: azul vibrante con acentos violetas
-val Primary = Color(0xFF0066CC)              // Frávega blue
+// Paleta corporativa: azul vibrante con acentos violetas
+val Primary = Color(0xFF0066CC)              // azul corporativo
 val PrimaryDark = Color(0xFF004A99)
 val PrimaryContainer = Color(0xFFE3F2FD)
 val OnPrimaryContainer = Color(0xFF003366)
@@ -14,7 +14,7 @@ val SecondaryContainer = Color(0xFFF3E5F5)
 val OnSecondaryContainer = Color(0xFF311B92)
 
 val Tertiary = Color(0xFF00ACC1)             // cian de acento
-val Accent = Color(0xFFFFD600)                // amarillo Frávega
+val Accent = Color(0xFFFFD600)                // amarillo de marca
 val AccentDark = Color(0xFFFFAB00)
 
 // Gradientes sutiles para fondos

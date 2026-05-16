@@ -134,10 +134,22 @@ fun ManagerDashboardScreen(
                 androidx.compose.material3.CircularProgressIndicator()
             }
         } else if (state.budget == null) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Aún no configuraste el presupuesto", style = MaterialTheme.typography.headlineMedium)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Aún no configuraste el presupuesto",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Cargá el presupuesto de la sucursal y la cantidad de asesores para arrancar.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = onOpenSetup, modifier = Modifier.height(56.dp)) {
                         Text("Configurar presupuesto")
                     }
@@ -207,14 +219,25 @@ fun ManagerDashboardScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("Estructura de Objetivos", style = MaterialTheme.typography.titleLarge)
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                "Estructura de Objetivos",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.SemiBold
+                            )
                             VariableType.values().forEach { v ->
                                 Row(modifier = Modifier.fillMaxWidth()) {
-                                    Text(v.displayName, modifier = Modifier.weight(1f))
+                                    Text(
+                                        v.displayName,
+                                        modifier = Modifier.weight(1f),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
                                     Column(horizontalAlignment = Alignment.End) {
                                         Text(
                                             Formatters.formatValue(v.valueOf(state.totalGoals), v.isCurrency),
+                                            color = MaterialTheme.colorScheme.onSurface,
                                             fontWeight = FontWeight.SemiBold
                                         )
                                         Text(
