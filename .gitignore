@@ -10,3 +10,9 @@
 local.properties
 app/build/
 app/release/
+
+# Firma de la app: NUNCA versionar el keystore ni sus contraseñas
+keystore.properties
+*.keystore
+*.jks
+app/keystore/

@@ -5,6 +5,16 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// Firma de release SIN secretos en el repo.
+// Si existe `keystore.properties` (gitignored) en la raíz del proyecto, se usa
+// para firmar el APK de release. Si no existe (por ejemplo en CI), el release
+// queda sin firmar y el debug usa la firma por defecto de Android.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val hasReleaseKeystore = keystorePropertiesFile.exists()
+val keystoreProperties = java.util.Properties().apply {
+    if (hasReleaseKeystore) load(keystorePropertiesFile.inputStream())
+}
+
 android {
     namespace = "com.salesgoals.app"
     compileSdk = 35
@@ -23,22 +33,28 @@ android {
     }
 
     signingConfigs {
-        create("appKey") {
-            storeFile = file("keystore/release.keystore")
-            storePassword = "REDACTED"
-            keyAlias = "REDACTED"
-            keyPassword = "REDACTED"
-            // Habilitamos firma v2/v3 explícitamente para máxima compatibilidad
-            enableV1Signing = true
-            enableV2Signing = true
-            enableV3Signing = true
+        // Solo se crea si hay un keystore.properties local (nunca versionado).
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                // Firma v1/v2/v3 para máxima compatibilidad de instalación.
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            }
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("appKey")
+            // Firma release solo si hay keystore local (keystore.properties).
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -46,10 +62,9 @@ android {
         }
         debug {
             isMinifyEnabled = false
-            // Usamos la misma llave en debug que en release para que un APK
-            // generado por GitHub Actions pueda instalarse como actualización
-            // sobre cualquier APK previo de este proyecto.
-            signingConfig = signingConfigs.getByName("appKey")
+            // Firma debug por defecto de Android (keystore autogenerado, sin
+            // secretos). El CI compila assembleDebug con esta firma y no
+            // necesita ningún secret.
         }
     }
 
