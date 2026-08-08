@@ -1,11 +1,39 @@
-# Objetivos de Ventas — App Android (Kotlin + Jetpack Compose)
+# 🎯 Objetivos de Ventas — App Android
 
-Aplicación nativa Android para gestionar y dar seguimiento a objetivos comerciales con dos modos:
+> App **Android nativa** para que un vendedor siga sus objetivos comerciales del mes, y para que la gerencia reparta el presupuesto de la sucursal entre el equipo. Hecha en **Kotlin + Jetpack Compose**, con base de datos local, notificaciones y build automático en CI.
 
-- **Modo Asesor (Vendedor)**: importa o carga manualmente su presupuesto mensual, registra resultados diarios y ve dashboard, proyección y semáforo de cumplimiento.
-- **Modo Gerencia (Administrador)**: carga el presupuesto total de la sucursal, divide automáticamente entre asesores (1 a 50), exporta el presupuesto individual de cada asesor y lo comparte por WhatsApp / Email / archivo.
+![Build](https://github.com/macpampa2026/SalesGoalsApp/actions/workflows/build-apk.yml/badge.svg)
+![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?logo=kotlin&logoColor=white)
+![Android](https://img.shields.io/badge/Android-7.0%2B%20(API%2024--35)-3DDC84?logo=android&logoColor=white)
+![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-Compatible con **Android 7.0 (API 24) hasta Android 16 (API 35)**.
+## ¿Qué hace?
+
+Dos modos según el rol:
+
+- **👤 Asesor (vendedor):** carga su presupuesto mensual, registra resultados día a día y ve un **dashboard con semáforo** (en línea / riesgo / atrasado), el ritmo que necesita y la **proyección** a fin de mes. Recibe un **recordatorio diario** y alertas si se atrasa.
+- **👥 Gerencia:** carga el presupuesto total de la sucursal y lo **divide automáticamente** entre 1 y 50 asesores, y le manda a cada uno el suyo por **WhatsApp / Email / archivo**.
+
+Compatible con **Android 7.0 (API 24) hasta API 35**.
+
+## Arquitectura
+
+```mermaid
+flowchart TD
+    UI["UI - Jetpack Compose (pantallas y componentes)"] --> VM["ViewModel - StateFlow (estado inmutable)"]
+    VM --> REPO["Repository - unica fuente de verdad"]
+    REPO --> ROOM[("Room / SQLite - presupuesto y resultados diarios")]
+    WM["WorkManager - recordatorio diario 19:00"] --> NOTIF["Notificaciones: recordatorio y alerta de atraso"]
+    REPO -. exporta/importa .-> SHARE["JSON / CSV -> WhatsApp, Email, archivo"]
+```
+
+Patrón **MVVM** con reactividad por `Flow` / `StateFlow`: cuando cambian los datos en Room, el dashboard se recalcula solo.
+
+## 📱 Capturas
+
+> _Espacio para las capturas reales desde el celular._ Para agregarlas: poné las imágenes en `docs/screenshots/` y referencialas acá, por ejemplo:
+> `![Dashboard](docs/screenshots/dashboard.png)`
 
 ---
 
@@ -184,22 +212,22 @@ SalesGoalsApp/
 
 ---
 
-## 7. Ejemplo: cargar el presupuesto gerencial del enunciado
+## 7. Ejemplo: cargar el presupuesto de la sucursal
 
-En **Gerencia → Presupuesto Sucursal** ingresá:
+En **Gerencia → Presupuesto Sucursal** ingresá valores como estos (ilustrativos):
 
 | Variable | Valor |
 |----------|-------|
-| Volumen | `287947479` |
-| Crédito | `44112000` |
-| Garantía | `14307000` |
-| Crédito Efectivo | `12000000` |
-| Celulares | `66` |
+| Volumen | `120000000` |
+| Crédito | `24000000` |
+| Garantía | `12000000` |
+| Crédito Efectivo | `6000000` |
+| Celulares | `60` |
 
 Definí **Días laborales = 22** y **Asesores = 6** (por ejemplo). En la pantalla de **Distribución** verás automáticamente:
 
-- Por asesor (mes): Volumen ≈ $47.991.246, Crédito ≈ $7.352.000, etc.
-- Por asesor (día): Volumen ≈ $2.181.420, Celulares ≈ 0,5/día.
+- Por asesor (mes): Volumen ≈ $20.000.000, Crédito ≈ $4.000.000, etc.
+- Por asesor (día): Volumen ≈ $909.000, Celulares ≈ 0,5/día.
 
 Tocá **Compartir** / **WhatsApp** / **Email** para enviar el archivo a cada asesor.
 
