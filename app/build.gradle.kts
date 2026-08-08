@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -11,7 +13,7 @@ plugins {
 // queda sin firmar y el debug usa la firma por defecto de Android.
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val hasReleaseKeystore = keystorePropertiesFile.exists()
-val keystoreProperties = java.util.Properties().apply {
+val keystoreProperties = Properties().apply {
     if (hasReleaseKeystore) load(keystorePropertiesFile.inputStream())
 }
 
